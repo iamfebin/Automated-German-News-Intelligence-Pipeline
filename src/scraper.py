@@ -22,7 +22,7 @@ HEADERS = {
 RSS_FEEDS = {
     "Tagesschau": "https://www.tagesschau.de/xml/rss2/",
     "Deutsche Welle": "https://rss.dw.com/xml/rss-de-all",
-    "Spiegel": "https://www.spiegel.de/hauptseite/index.rss"
+    "Spiegel": "https://www.spiegel.de/index.rss"
 }
 
 def clean_german_text(text: str) -> str:
@@ -143,7 +143,14 @@ def scrape_news_feeds(limit_per_feed: int = 5) -> List[Dict]:
     for source, feed_url in RSS_FEEDS.items():
         logger.info(f"Parsing RSS feed for {source}: {feed_url}")
         try:
-            feed = feedparser.parse(feed_url)
+            # Fetch RSS feed using requests with browser headers to avoid user-agent blocks
+            response = requests.get(feed_url, headers=HEADERS, timeout=10)
+            if response.status_code == 200:
+                feed = feedparser.parse(response.content)
+            else:
+                logger.warning(f"Failed to fetch RSS feed for {source} (Status {response.status_code}). Falling back to direct parsing.")
+                feed = feedparser.parse(feed_url)
+                
             entries = feed.entries[:limit_per_feed]
             logger.info(f"Found {len(feed.entries)} entries. Processing top {len(entries)}")
             
