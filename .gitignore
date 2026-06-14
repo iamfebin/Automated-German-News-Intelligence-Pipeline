@@ -22,3 +22,5 @@ data/
 # Temporary / test files
 test_download.bin
 *.log
+logs-iamfebin-automated-german-news-intelligence-pipeline-main-app.py-2026-06-14T12_36_46.832Z.txt
+.vscode/
