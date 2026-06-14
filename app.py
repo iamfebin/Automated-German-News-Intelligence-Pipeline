@@ -2,7 +2,12 @@ import os
 import sys
 import json
 import logging
+import warnings
 from typing import Tuple, Optional, List, Dict
+
+# Suppress SyntaxWarnings from third-party libraries (like evidently under Python 3.12+)
+warnings.filterwarnings("ignore", category=SyntaxWarning)
+
 import pandas as pd
 import numpy as np
 import streamlit as st

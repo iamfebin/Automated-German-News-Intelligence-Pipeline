@@ -1,8 +1,12 @@
 import os
 import sys
 import logging
+import warnings
 from datetime import datetime
 from typing import List, Dict
+
+# Suppress SyntaxWarnings from third-party libraries (like evidently under Python 3.12+)
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 # Set up logging to console
 logging.basicConfig(

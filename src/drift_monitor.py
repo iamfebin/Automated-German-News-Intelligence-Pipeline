@@ -1,11 +1,15 @@
 import os
 import json
 import logging
+import warnings
 from datetime import datetime, timedelta
 from typing import Dict, Any, Tuple
 import pandas as pd
 import numpy as np
 from scipy.stats import wasserstein_distance
+
+# Suppress SyntaxWarnings from third-party libraries (like evidently under Python 3.12+)
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 # Try importing Evidently. If not installed, we'll log warnings or fallback.
 try:
