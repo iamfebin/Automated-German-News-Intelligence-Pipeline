@@ -1,0 +1,14 @@
+streamlit>=1.24.0
+pandas>=2.0.0
+pyarrow>=12.0.0
+numpy>=1.24.0
+faiss-cpu>=1.7.4
+huggingface-hub>=0.16.4
+requests>=2.31.0
+evidently>=0.4.0
+sentence-transformers>=2.2.2
+torch>=2.0.0
+scikit-learn>=1.2.0
+scipy>=1.10.0
+sentencepiece>=0.1.99
+sacremoses>=0.0.53

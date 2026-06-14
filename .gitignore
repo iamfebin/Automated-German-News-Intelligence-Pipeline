@@ -1,0 +1,24 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache / compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Local data / metrics (Stored remotely on Hugging Face Hub in production)
+data/
+
+# Secrets / credentials
+.streamlit/secrets.toml
+.env
+.huggingface/
+
+# Temporary / test files
+test_download.bin
+*.log
