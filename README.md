@@ -42,7 +42,7 @@ If no Hugging Face credentials are set, the application automatically functions 
 3.  **Install Dependencies**:
     ```bash
     pip install -r requirements_etl.txt
-    pip install -r requirements_app.txt
+    pip install -r requirements.txt
     ```
 
 4.  **Run the ETL Pipeline manually**:
