@@ -281,7 +281,13 @@ with tab1:
             max_value=1.0,
             value=0.35,
             step=0.05,
-            help="Minimum cosine similarity score (0.0 to 1.0) required to display an article."
+            help=(
+                "Minimum cosine similarity score required. Recommended: 0.35 - 0.45.\n\n"
+                "• 0.60+: Very strong relevance\n"
+                "• 0.40 - 0.60: Good relevance\n"
+                "• < 0.30: Mostly unrelated noise\n\n"
+                "Note: A threshold above 0.80 is extremely restrictive and will filter out almost all matches."
+            )
         )
 
     if query:
