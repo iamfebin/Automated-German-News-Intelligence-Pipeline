@@ -29,7 +29,7 @@ from src.drift_monitor import DRIFT_REPORT_FILENAME, DRIFT_METRICS_FILENAME, DAT
 
 # Safe loading of Streamlit secrets to prevent crash if secrets.toml is missing
 try:
-    HF_TOKEN = st.secrets.get("HF_TOKEN")
+    HF_TOKEN = st.secrets.get("HF_TOKEN") or st.secrets.get("HF_WRITE_TOKEN")
     HF_REPO_ID = st.secrets.get("HF_REPO_ID")
 except Exception:
     HF_TOKEN = None
