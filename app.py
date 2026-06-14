@@ -184,8 +184,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 1. Cache the loading of Metadata and FAISS Index
-@st.cache_resource(show_spinner="Loading semantic database index...")
+# 1. Cache the loading of Metadata and FAISS Index (15-minute TTL to pick up new uploads)
+@st.cache_resource(show_spinner="Loading semantic database index...", ttl=900)
 def get_cached_database(repo_id: Optional[str], token: Optional[str]) -> Tuple[pd.DataFrame, Optional[object]]:
     return load_index_and_metadata(repo_id=repo_id, token=token)
 
@@ -238,6 +238,9 @@ with st.sidebar:
     st.markdown("### Platform Configurations")
     if HF_REPO_ID:
         st.success(f"Connected to Hugging Face Hub Dataset:\n`{HF_REPO_ID}`")
+        if st.button("🔄 Sync & Refresh Database", help="Clears cache and forces a redownload of the latest news database from Hugging Face."):
+            st.cache_resource.clear()
+            st.rerun()
     else:
         st.info("Running in local mode. No Hugging Face dataset repository configured.")
         
