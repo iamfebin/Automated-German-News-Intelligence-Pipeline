@@ -265,7 +265,7 @@ tab1, tab2 = st.tabs(["🔍 Semantic Search Portal", "🩺 MLOps Pipeline Health
 
 # TAB 1: SEARCH PORTAL
 with tab1:
-    col1, col2 = st.columns([4, 1])
+    col1, col2, col3 = st.columns([3, 1, 1])
     with col1:
         query = st.text_input(
             label="Search Query",
@@ -274,6 +274,15 @@ with tab1:
         )
     with col2:
         top_k = st.slider("Top Results", min_value=1, max_value=20, value=5)
+    with col3:
+        similarity_threshold = st.slider(
+            "Relevance Threshold",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.35,
+            step=0.05,
+            help="Minimum cosine similarity score (0.0 to 1.0) required to display an article."
+        )
 
     if query:
         if df.empty or index is None or index.ntotal == 0:
@@ -286,53 +295,65 @@ with tab1:
             if not results:
                 st.info("No matching articles found.")
             else:
-                st.markdown(f"#### Found {len(results)} contextually relevant articles:")
+                # Filter results by similarity threshold
+                filtered_results = [res for res in results if res["similarity_score"] >= similarity_threshold]
                 
-                for res in results:
-                    # NER badge tags
-                    badge_html = ""
-                    entities = res["entities"]
-                    seen_badges = set()
+                if not filtered_results:
+                    max_score = results[0]["similarity_score"]
+                    max_title = results[0]["title_de"]
+                    st.warning(
+                        f"No articles matched your Relevance Threshold of **{similarity_threshold:.2f}**.\n\n"
+                        f"The closest match found was **'{max_title}'** with a similarity score of **{max_score:.4f}**.\n\n"
+                        f"Try lowering the threshold or searching for different terms."
+                    )
+                else:
+                    st.markdown(f"#### Found {len(filtered_results)} contextually relevant articles:")
                     
-                    for ent in entities:
-                        word = ent["word"].strip()
-                        etype = ent["entity"].lower()
-                        # Deduplicate entities
-                        badge_key = f"{word}||{etype}"
-                        if badge_key in seen_badges:
-                            continue
-                        seen_badges.add(badge_key)
+                    for res in filtered_results:
+                        # NER badge tags
+                        badge_html = ""
+                        entities = res["entities"]
+                        seen_badges = set()
                         
-                        b_class = "badge-per" if etype == "per" else "badge-loc" if etype == "loc" else "badge-org"
-                        badge_html += f"<span class='badge {b_class}'>{etype.upper()}: {word}</span>"
+                        for ent in entities:
+                            word = ent["word"].strip()
+                            etype = ent["entity"].lower()
+                            # Deduplicate entities
+                            badge_key = f"{word}||{etype}"
+                            if badge_key in seen_badges:
+                                continue
+                            seen_badges.add(badge_key)
+                            
+                            b_class = "badge-per" if etype == "per" else "badge-loc" if etype == "loc" else "badge-org"
+                            badge_html += f"<span class='badge {b_class}'>{etype.upper()}: {word}</span>"
+                            
+                        # Source badge color
+                        src = res["source"]
                         
-                    # Source badge color
-                    src = res["source"]
-                    
-                    # Custom card HTML
-                    st.markdown(f"""
-                    <div class='news-card'>
-                        <div class='news-header'>
-                            <span class='news-source'>{src}</span>
-                            <span class='news-date'>{res['timestamp']} | Match Score: {res['similarity_score']:.4f}</span>
+                        # Custom card HTML
+                        st.markdown(f"""
+                        <div class='news-card'>
+                            <div class='news-header'>
+                                <span class='news-source'>{src}</span>
+                                <span class='news-date'>{res['timestamp']} | Match Score: {res['similarity_score']:.4f}</span>
+                            </div>
+                            <div class='news-title'>{res['title_de']}</div>
+                            <div class='summary-box'>
+                                <strong>Bilingual English Summary:</strong><br>
+                                {res['summary_en']}
+                            </div>
+                            <div style='margin-bottom: 10px;'>
+                                <a class='news-url-link' href='{res['url']}' target='_blank'>Read original article page ↗</a>
+                            </div>
+                            <div class='entity-container'>
+                                {badge_html}
+                            </div>
                         </div>
-                        <div class='news-title'>{res['title_de']}</div>
-                        <div class='summary-box'>
-                            <strong>Bilingual English Summary:</strong><br>
-                            {res['summary_en']}
-                        </div>
-                        <div style='margin-bottom: 10px;'>
-                            <a class='news-url-link' href='{res['url']}' target='_blank'>Read original article page ↗</a>
-                        </div>
-                        <div class='entity-container'>
-                            {badge_html}
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Original text collapsible segment
-                    with st.expander("Show Original German Text"):
-                        st.write(res["body_de"])
+                        """, unsafe_allow_html=True)
+                        
+                        # Original text collapsible segment
+                        with st.expander("Show Original German Text"):
+                            st.write(res["body_de"])
     else:
         st.info("Enter a query above to explore regional German news articles semantically.")
 
