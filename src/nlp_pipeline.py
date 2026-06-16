@@ -11,14 +11,11 @@ logger = logging.getLogger(__name__)
 
 # Choose models based on environment variables or default to lightweight models
 NER_MODEL_NAME = os.environ.get("NER_MODEL_NAME", "fhswf/bert_de_ner")
-TRANSLATION_MODEL_NAME = os.environ.get("TRANSLATION_MODEL_NAME", "Helsinki-NLP/opus-mt-de-en")
-EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "sentence-transformers/all-MiniLM-L6-v2")
+EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 class NLPPipeline:
     def __init__(self):
         self.ner_pipeline = None
-        self.translation_model = None
-        self.translation_tokenizer = None
         self.embedding_model = None
         
         # Check if CUDA is available, otherwise default to CPU
@@ -36,15 +33,6 @@ class NLPPipeline:
             )
         return self.ner_pipeline
 
-    def load_translation(self):
-        if self.translation_model is None or self.translation_tokenizer is None:
-            logger.info(f"Loading Translation model: {TRANSLATION_MODEL_NAME}...")
-            from transformers import MarianMTModel, MarianTokenizer
-            self.translation_tokenizer = MarianTokenizer.from_pretrained(TRANSLATION_MODEL_NAME)
-            self.translation_model = MarianMTModel.from_pretrained(TRANSLATION_MODEL_NAME)
-            if self.device == 0:
-                self.translation_model = self.translation_model.to("cuda")
-        return self.translation_model, self.translation_tokenizer
 
     def load_embeddings(self):
         if self.embedding_model is None:
@@ -80,37 +68,7 @@ class NLPPipeline:
             logger.error(f"Error during NER extraction: {e}")
             return []
 
-    def generate_summary_en(self, text: str) -> str:
-        """
-        Generates an English summary by translating the lead paragraphs/sentences of the article.
-        """
-        if not text:
-            return ""
-        
-        try:
-            # Extract lead content (e.g. first 3 sentences or up to ~600 chars)
-            # Find the first few sentences
-            sentences = text.split(". ")
-            lead_text = ". ".join(sentences[:3])
-            if len(lead_text) > 600:
-                lead_text = lead_text[:600]
-            if not lead_text.endswith("."):
-                lead_text += "."
-                
-            model, tokenizer = self.load_translation()
-            
-            # Tokenize and generate translation
-            inputs = tokenizer(lead_text, return_tensors="pt", padding=True, truncation=True)
-            if self.device == 0:
-                inputs = {k: v.to("cuda") for k, v in inputs.items()}
-                
-            translated = model.generate(**inputs)
-            summary = tokenizer.decode(translated[0], skip_special_tokens=True)
-            
-            return summary.strip()
-        except Exception as e:
-            logger.error(f"Error during translation/summary generation: {e}")
-            return "Translation unavailable."
+
 
     def generate_embeddings(self, texts: List[str]) -> np.ndarray:
         """
@@ -145,9 +103,7 @@ if __name__ == "__main__":
     entities = pipeline.extract_entities(test_german_text)
     print(f"Entities: {json.dumps(entities, indent=2)}")
     
-    print("\nTesting Translation (Summary)...")
-    summary = pipeline.generate_summary_en(test_german_text)
-    print(f"English translation: {summary}")
+
     
     print("\nTesting Embeddings...")
     emb = pipeline.generate_embeddings([test_german_text])

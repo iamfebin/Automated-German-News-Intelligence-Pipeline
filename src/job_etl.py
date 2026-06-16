@@ -91,12 +91,9 @@ def main():
             # 4.1 Localized Named Entity Recognition
             art["entities"] = nlp.extract_entities(art["body_de"])
             
-            # 4.2 Translation and English summary
-            art["summary_en"] = nlp.generate_summary_en(art["body_de"])
-            
-            # 4.3 English embeddings vector generation
-            # Embed the generated English summary
-            text_to_embed = art["summary_en"]
+            # 4.2 Embeddings vector generation (Joint Multilingual Vector Space)
+            # Embed title and body concatenated
+            text_to_embed = f"{art['title_de']}. {art['body_de']}"
             embeddings = nlp.generate_embeddings([text_to_embed])
             art["embedding"] = embeddings[0]
             

@@ -42,6 +42,9 @@ def clean_german_text(text: str) -> str:
     # Normalize to Unicode NFC form (ensures characters like ä, ö, ü, ß are single codepoints)
     text = unicodedata.normalize('NFC', text)
     
+    # Clean hyphens in German compound words (e.g. "Corona - Krise" -> "Corona-Krise")
+    text = re.sub(r'(\b\w+)\s*-\s*(\w+\b)', r'\1-\2', text)
+    
     # Clean whitespace
     text = re.sub(r'\s+', ' ', text)
     

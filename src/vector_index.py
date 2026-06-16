@@ -165,7 +165,6 @@ def update_index_and_metadata(
             "title_de": art["title_de"],
             "body_de": art["body_de"],
             "entities": json.dumps(art["entities"]), # Store as JSON string for safety
-            "summary_en": art["summary_en"],
             "embedding": list(emb.astype(float)) # Convert numpy array to list for parquet compatibility
         }
         new_rows.append(row)
@@ -241,7 +240,6 @@ def query_vector_search(
             "title_de": row["title_de"],
             "body_de": row["body_de"],
             "entities": entities,
-            "summary_en": row["summary_en"],
             "similarity_score": float(score)
         })
         
@@ -261,7 +259,6 @@ if __name__ == "__main__":
             "title_de": "Dummy Titel",
             "body_de": "Dies ist ein Testartikel über künstliche Intelligenz in Hamburg.",
             "entities": [{"word": "Hamburg", "entity": "LOC", "score": 0.99}],
-            "summary_en": "This is a test article about artificial intelligence in Hamburg.",
             "embedding": np.random.randn(384).astype('float32')
         }
     ]

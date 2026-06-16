@@ -80,9 +80,9 @@ class TestPipelineComponents(unittest.TestCase):
         
         # Metadata
         df = pd.DataFrame([
-            {"article_id": "1", "title_de": "A", "entities": "[]", "summary_en": "S1", "source": "Tagesschau", "url": "U1", "body_de": "B1", "timestamp": "T1"},
-            {"article_id": "2", "title_de": "B", "entities": "[]", "summary_en": "S2", "source": "Spiegel", "url": "U2", "body_de": "B2", "timestamp": "T2"},
-            {"article_id": "3", "title_de": "C", "entities": "[]", "summary_en": "S3", "source": "DW", "url": "U3", "body_de": "B3", "timestamp": "T3"}
+            {"article_id": "1", "title_de": "A", "entities": "[]", "source": "Tagesschau", "url": "U1", "body_de": "B1", "timestamp": "T1"},
+            {"article_id": "2", "title_de": "B", "entities": "[]", "source": "Spiegel", "url": "U2", "body_de": "B2", "timestamp": "T2"},
+            {"article_id": "3", "title_de": "C", "entities": "[]", "source": "DW", "url": "U3", "body_de": "B3", "timestamp": "T3"}
         ])
         
         # Query closest to vector 2

@@ -44,7 +44,7 @@ except Exception:
 HF_TOKEN = HF_TOKEN or os.environ.get("HF_TOKEN") or os.environ.get("HF_WRITE_TOKEN")
 HF_REPO_ID = HF_REPO_ID or os.environ.get("HF_REPO_ID")
 
-EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 API_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{EMBEDDING_MODEL_NAME}"
 
 # Custom CSS for Premium Design Look (dark mode friendly, glassmorphism, nice badges)
@@ -229,6 +229,42 @@ def vectorize_query(query_text: str, token: Optional[str]) -> np.ndarray:
     emb = emb / np.linalg.norm(emb)
     return emb
 
+@st.cache_data(show_spinner="Translating article summary...", ttl=3600)
+def translate_text_cached(text: str, token: Optional[str]) -> str:
+    """
+    Translates first 3 sentences / lead text of the article JIT
+    using the HF Serverless Inference API for Helsinki-NLP/opus-mt-de-en.
+    Falls back gracefully if the API fails or token is missing.
+    """
+    if not text:
+        return ""
+    
+    # Extract lead content (first 3 sentences or up to ~600 chars)
+    sentences = text.split(". ")
+    lead_text = ". ".join(sentences[:3])
+    if len(lead_text) > 600:
+        lead_text = lead_text[:600]
+    if not lead_text.endswith("."):
+        lead_text += "."
+        
+    if token:
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            api_url = "https://api-inference.huggingface.co/models/Helsinki-NLP/opus-mt-de-en"
+            response = requests.post(api_url, headers=headers, json={"inputs": lead_text}, timeout=10)
+            if response.status_code == 200:
+                res_json = response.json()
+                if isinstance(res_json, list) and len(res_json) > 0:
+                    translation = res_json[0].get("translation_text", "").strip()
+                    if translation:
+                        return translation
+            else:
+                logger.warning(f"HF translation API returned status {response.status_code}: {response.text}")
+        except Exception as e:
+            logger.error(f"Hugging Face Serverless translation failed: {e}")
+            
+    return "English translation unavailable (configure HF_TOKEN or check API connection)."
+
 # Layout setup
 st.markdown("<h1 class='main-title'>📰 German News Intelligence</h1>", unsafe_allow_html=True)
 st.markdown("<p class='subtitle'>Semantic search and localized intelligence across regional German news feeds (Tagesschau, DW, Spiegel)</p>", unsafe_allow_html=True)
@@ -339,6 +375,9 @@ with tab1:
                         # Source badge color
                         src = res["source"]
                         
+                        # Translate JIT
+                        summary_en = translate_text_cached(res["body_de"], HF_TOKEN)
+                        
                         # Custom card HTML
                         st.markdown(f"""
                         <div class='news-card'>
@@ -349,7 +388,7 @@ with tab1:
                             <div class='news-title'>{res['title_de']}</div>
                             <div class='summary-box'>
                                 <strong>Bilingual English Summary:</strong><br>
-                                {res['summary_en']}
+                                {summary_en}
                             </div>
                             <div style='margin-bottom: 10px;'>
                                 <a class='news-url-link' href='{res['url']}' target='_blank'>Read original article page ↗</a>

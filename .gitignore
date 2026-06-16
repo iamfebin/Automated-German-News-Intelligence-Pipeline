@@ -25,3 +25,6 @@ test_download.bin
 logs-iamfebin-automated-german-news-intelligence-pipeline-main-app.py-2026-06-14T12_36_46.832Z.txt
 .vscode/
 pyrefly.toml
+
+# agent prompts
+agents.md
