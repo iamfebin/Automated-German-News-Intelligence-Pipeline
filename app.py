@@ -46,7 +46,7 @@ HF_TOKEN = HF_TOKEN or os.environ.get("HF_TOKEN") or os.environ.get("HF_WRITE_TO
 HF_REPO_ID = HF_REPO_ID or os.environ.get("HF_REPO_ID")
 
 EMBEDDING_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-API_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{EMBEDDING_MODEL_NAME}"
+API_URL = f"https://router.huggingface.co/hf-inference/models/{EMBEDDING_MODEL_NAME}"
 
 # Custom CSS for Premium Design Look (dark mode friendly, glassmorphism, nice badges)
 st.markdown("""
@@ -256,7 +256,7 @@ def translate_text_cached(text: str, token: Optional[str]) -> str:
         
     if token:
         headers = {"Authorization": f"Bearer {token}"}
-        api_url = "https://api-inference.huggingface.co/models/Helsinki-NLP/opus-mt-de-en"
+        api_url = "https://router.huggingface.co/hf-inference/models/Helsinki-NLP/opus-mt-de-en"
         for attempt in range(3):
             try:
                 response = requests.post(api_url, headers=headers, json={"inputs": lead_text}, timeout=10)
