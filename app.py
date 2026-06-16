@@ -13,6 +13,7 @@ import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 import requests
+import time
 
 # Set page configuration first
 st.set_page_config(
@@ -208,20 +209,26 @@ def vectorize_query(query_text: str, token: Optional[str]) -> np.ndarray:
     
     # Try Serverless HF API if token is provided
     if token:
-        try:
-            headers = {"Authorization": f"Bearer {token}"}
-            response = requests.post(API_URL, headers=headers, json={"inputs": query_text}, timeout=10)
-            if response.status_code == 200:
-                res_json = response.json()
-                if isinstance(res_json, list):
-                    emb = np.array(res_json, dtype=np.float32)
-                    # Normalize vector
-                    emb = emb / np.linalg.norm(emb)
-                    return emb
+        headers = {"Authorization": f"Bearer {token}"}
+        for attempt in range(3):
+            try:
+                response = requests.post(API_URL, headers=headers, json={"inputs": query_text}, timeout=10)
+                if response.status_code == 200:
+                    res_json = response.json()
+                    if isinstance(res_json, list):
+                        emb = np.array(res_json, dtype=np.float32)
+                        # Normalize vector
+                        emb = emb / np.linalg.norm(emb)
+                        return emb
+                else:
+                    logger.warning(f"HF API returned status {response.status_code} (attempt {attempt + 1}): {response.text}")
+            except Exception as e:
+                logger.warning(f"Hugging Face Serverless Inference attempt {attempt + 1} failed: {e}")
+            
+            if attempt < 2:
+                time.sleep(1)
             else:
-                logger.warning(f"HF API returned status {response.status_code}: {response.text}")
-        except Exception as e:
-            logger.error(f"Hugging Face Serverless Inference failed: {e}. Falling back to local model.")
+                logger.error("Hugging Face Serverless Inference failed after 3 attempts. Falling back to local model.")
             
     # Fallback to local model execution
     local_model = get_local_embedding_model()
@@ -248,20 +255,26 @@ def translate_text_cached(text: str, token: Optional[str]) -> str:
         lead_text += "."
         
     if token:
-        try:
-            headers = {"Authorization": f"Bearer {token}"}
-            api_url = "https://api-inference.huggingface.co/models/Helsinki-NLP/opus-mt-de-en"
-            response = requests.post(api_url, headers=headers, json={"inputs": lead_text}, timeout=10)
-            if response.status_code == 200:
-                res_json = response.json()
-                if isinstance(res_json, list) and len(res_json) > 0:
-                    translation = res_json[0].get("translation_text", "").strip()
-                    if translation:
-                        return translation
+        headers = {"Authorization": f"Bearer {token}"}
+        api_url = "https://api-inference.huggingface.co/models/Helsinki-NLP/opus-mt-de-en"
+        for attempt in range(3):
+            try:
+                response = requests.post(api_url, headers=headers, json={"inputs": lead_text}, timeout=10)
+                if response.status_code == 200:
+                    res_json = response.json()
+                    if isinstance(res_json, list) and len(res_json) > 0:
+                        translation = res_json[0].get("translation_text", "").strip()
+                        if translation:
+                            return translation
+                else:
+                    logger.warning(f"HF translation API returned status {response.status_code} (attempt {attempt + 1}): {response.text}")
+            except Exception as e:
+                logger.warning(f"Hugging Face Serverless translation attempt {attempt + 1} failed: {e}")
+            
+            if attempt < 2:
+                time.sleep(1)
             else:
-                logger.warning(f"HF translation API returned status {response.status_code}: {response.text}")
-        except Exception as e:
-            logger.error(f"Hugging Face Serverless translation failed: {e}")
+                logger.error("Hugging Face Serverless translation failed after 3 attempts.")
             
     return "English translation unavailable (configure HF_TOKEN or check API connection)."
 
