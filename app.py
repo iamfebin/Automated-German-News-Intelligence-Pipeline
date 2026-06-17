@@ -212,10 +212,13 @@ def vectorize_query(query_text: str, token: Optional[str]) -> np.ndarray:
     
     # Try Serverless HF API if token is provided
     if token:
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "x-wait-for-model": "true"
+        }
         for attempt in range(3):
             try:
-                response = requests.post(API_URL, headers=headers, json={"inputs": query_text}, timeout=10)
+                response = requests.post(API_URL, headers=headers, json={"inputs": query_text}, timeout=30)
                 if response.status_code == 200:
                     res_json = response.json()
                     if isinstance(res_json, list):
@@ -261,11 +264,14 @@ def translate_text_cached(text: str, token: Optional[str]) -> str:
         lead_text += "."
         
     if token:
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "x-wait-for-model": "true"
+        }
         api_url = "https://router.huggingface.co/hf-inference/models/Helsinki-NLP/opus-mt-de-en"
         for attempt in range(3):
             try:
-                response = requests.post(api_url, headers=headers, json={"inputs": lead_text}, timeout=10)
+                response = requests.post(api_url, headers=headers, json={"inputs": lead_text}, timeout=30)
                 if response.status_code == 200:
                     res_json = response.json()
                     if isinstance(res_json, list) and len(res_json) > 0:
