@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: german_news_web
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HF_REPO_ID=${HF_REPO_ID:-}
+    restart: unless-stopped
+
+  etl:
+    build: .
+    container_name: german_news_etl
+    command: python src/job_etl.py
+    profiles:
+      - etl
+    volumes:
+      - ./data:/app/data
+    environment:
+      - HF_WRITE_TOKEN=${HF_WRITE_TOKEN:-}
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HF_REPO_ID=${HF_REPO_ID:-}
+      - SCRAPER_LIMIT_PER_FEED=${SCRAPER_LIMIT_PER_FEED:-10}
