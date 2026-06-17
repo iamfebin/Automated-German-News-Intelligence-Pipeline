@@ -46,7 +46,7 @@ HF_TOKEN = HF_TOKEN or os.environ.get("HF_TOKEN") or os.environ.get("HF_WRITE_TO
 HF_REPO_ID = HF_REPO_ID or os.environ.get("HF_REPO_ID")
 
 EMBEDDING_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-API_URL = f"https://router.huggingface.co/hf-inference/models/{EMBEDDING_MODEL_NAME}"
+API_URL = f"https://router.huggingface.co/hf-inference/models/{EMBEDDING_MODEL_NAME}/pipeline/feature-extraction"
 
 # Custom CSS for Premium Design Look (dark mode friendly, glassmorphism, nice badges)
 st.markdown("""
@@ -190,6 +190,9 @@ st.markdown("""
 def get_cached_database(repo_id: Optional[str], token: Optional[str]) -> Tuple[pd.DataFrame, Optional[object]]:
     return load_index_and_metadata(repo_id=repo_id, token=token)
 
+if "hf_permission_error" not in st.session_state:
+    st.session_state.hf_permission_error = False
+
 df, index = get_cached_database(HF_REPO_ID, HF_TOKEN)
 
 # 2. Cached local embedding model for fallback
@@ -220,6 +223,9 @@ def vectorize_query(query_text: str, token: Optional[str]) -> np.ndarray:
                         # Normalize vector
                         emb = emb / np.linalg.norm(emb)
                         return emb
+                elif response.status_code == 403 and "permissions to call Inference Providers" in response.text:
+                    st.session_state.hf_permission_error = True
+                    logger.warning(f"HF API returned status {response.status_code} (attempt {attempt + 1}): {response.text}")
                 else:
                     logger.warning(f"HF API returned status {response.status_code} (attempt {attempt + 1}): {response.text}")
             except Exception as e:
@@ -266,6 +272,9 @@ def translate_text_cached(text: str, token: Optional[str]) -> str:
                         translation = res_json[0].get("translation_text", "").strip()
                         if translation:
                             return translation
+                elif response.status_code == 403 and "permissions to call Inference Providers" in response.text:
+                    st.session_state.hf_permission_error = True
+                    logger.warning(f"HF translation API returned status {response.status_code} (attempt {attempt + 1}): {response.text}")
                 else:
                     logger.warning(f"HF translation API returned status {response.status_code} (attempt {attempt + 1}): {response.text}")
             except Exception as e:
@@ -284,6 +293,16 @@ st.markdown("<p class='subtitle'>Semantic search and localized intelligence acro
 
 # Sidebar configurations
 with st.sidebar:
+    if st.session_state.get("hf_permission_error", False):
+        st.error(
+            "⚠️ **Hugging Face Token Scope Error**\n\n"
+            "Your Hugging Face Token lacks the required permission to access Inference Providers. "
+            "Please go to [Hugging Face Settings > Access Tokens](https://huggingface.co/settings/tokens), "
+            "edit your token, and check the **'Make calls to Inference Providers'** box under permissions, "
+            "or use a classic **Read** token."
+        )
+        st.markdown("---")
+
     st.markdown("### Platform Configurations")
     if HF_REPO_ID:
         st.success(f"Connected to Hugging Face Hub Dataset:\n`{HF_REPO_ID}`")
