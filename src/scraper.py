@@ -57,6 +57,46 @@ def generate_article_id(url: str, pub_date_str: str) -> str:
     unique_string = f"{url}||{pub_date_str}"
     return hashlib.sha256(unique_string.encode('utf-8')).hexdigest()
 
+def is_paywalled_content(title: str, url: str, body: str) -> bool:
+    """
+    Checks if the article is premium, paywalled, or contains subscription boilerplate.
+    Returns True if it's paywalled, False otherwise.
+    """
+    title_lower = title.lower()
+    url_lower = url.lower()
+    body_lower = body.lower()
+    
+    # 1. URL patterns for premium/paywalled content (e.g. Spiegel+ contains '/plus/' or 'spiegelplus')
+    if "/plus/" in url_lower or "spiegelplus" in url_lower:
+        return True
+        
+    # 2. Title indicators (e.g. starting with SPIEGEL+)
+    if "spiegel+" in title_lower or "spiegel plus" in title_lower:
+        return True
+        
+    # 3. Body text signatures of common paywall blockages or subscription templates
+    paywall_signatures = [
+        "sie können den artikel nicht mehr aufrufen",
+        "der link, der ihnen zugesendet wurde",
+        "wurde bereits 10 mal geöffnet",
+        "haben sie bereits ein digital-abonnement",
+        "haben sie bereits ein print-abonnement",
+        "digitalzugang bestellen",
+        "weiterlesen mit spiegel+",
+        "abonnieren sie spiegel+",
+        "exklusiv für abonnenten",
+        "nur für abonnenten",
+        "alle artikel auf spiegel.de frei lesen",
+        "unterstützen sie unabhängigen journalismus",
+        "dieser text ist für abonnenten"
+    ]
+    
+    for sig in paywall_signatures:
+        if sig in body_lower:
+            return True
+            
+    return False
+
 def scrape_full_article_body(url: str, source: str) -> str:
     """
     Fetches the article URL and extracts the main body text based on publisher rules,
@@ -187,6 +227,10 @@ def scrape_news_feeds(limit_per_feed: int = 5) -> List[Dict]:
                     
                 if not body_de:
                     logger.warning(f"Skipping article {url} due to empty body text.")
+                    continue
+                
+                if is_paywalled_content(title, url, body_de):
+                    logger.warning(f"Skipping paywalled/premium article: {title} ({url})")
                     continue
                 
                 scraped_articles.append({

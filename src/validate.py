@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # Add parent dir to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.scraper import clean_german_text, generate_article_id, RSS_FEEDS
+from src.scraper import clean_german_text, generate_article_id, RSS_FEEDS, is_paywalled_content
 from src.drift_monitor import calculate_psi, compute_embedding_drift
 from src.vector_index import query_vector_search
 
@@ -95,6 +95,49 @@ class TestPipelineComponents(unittest.TestCase):
         self.assertEqual(results[0]["article_id"], "2")
         self.assertEqual(results[0]["title_de"], "B")
         self.assertTrue(results[0]["similarity_score"] > results[1]["similarity_score"])
+
+    def test_is_paywalled_content(self):
+        logger.info("Running test_is_paywalled_content...")
+        
+        # Test Case 1: Paywalled Spiegel+ URL
+        self.assertTrue(is_paywalled_content(
+            title="Normal Title",
+            url="https://www.spiegel.de/plus/some-premium-article-12345.html",
+            body="Some normal German text content."
+        ))
+        
+        # Test Case 2: Title indicating Spiegel+
+        self.assertTrue(is_paywalled_content(
+            title="SPIEGEL+: Premium News",
+            url="https://www.spiegel.de/panorama/some-article-12345.html",
+            body="Some normal German text content."
+        ))
+        
+        # Test Case 3: Body containing the paywall message reported by user
+        paywall_body = (
+            "Sie können den Artikel nicht mehr aufrufen. Der Link, der Ihnen zugesendet wurde, "
+            "ist entweder älter als 30 Tage oder der Artikel wurde bereits 10 Mal geöffnet. "
+            "Haben Sie bereits ein Digital-Abonnement? Zum Login."
+        )
+        self.assertTrue(is_paywalled_content(
+            title="Random Article",
+            url="https://www.spiegel.de/panorama/normal-url.html",
+            body=paywall_body
+        ))
+        
+        # Test Case 4: Body containing typical subscription boilerplate
+        self.assertTrue(is_paywalled_content(
+            title="Another News",
+            url="https://www.spiegel.de/panorama/normal-url.html",
+            body="Dieser Text ist exklusiv für Abonnenten. Bitte abonnieren Sie Spiegel+."
+        ))
+        
+        # Test Case 5: Normal non-paywalled article
+        self.assertFalse(is_paywalled_content(
+            title="Normal Article Title",
+            url="https://www.tagesschau.de/inland/normal-article.html",
+            body="Das ist ein ganz normaler Nachrichtenartikel ohne Bezahlschranke."
+        ))
 
 if __name__ == "__main__":
     unittest.main()

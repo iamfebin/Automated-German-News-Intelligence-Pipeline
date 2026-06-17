@@ -81,6 +81,28 @@ def load_index_and_metadata(repo_id: Optional[str] = None, token: Optional[str] 
         try:
             df = pd.read_parquet(metadata_path)
             logger.info(f"Loaded {len(df)} metadata records from {metadata_path}")
+            
+            # Filter out existing paywalled articles
+            if not df.empty:
+                from src.scraper import is_paywalled_content
+                initial_count = len(df)
+                paywall_mask = df.apply(
+                    lambda row: is_paywalled_content(
+                        row.get("title_de", ""), 
+                        row.get("url", ""), 
+                        row.get("body_de", "")
+                    ), 
+                    axis=1
+                )
+                df = df[~paywall_mask].reset_index(drop=True)
+                filtered_count = len(df)
+                if filtered_count < initial_count:
+                    logger.info(f"Filtered out {initial_count - filtered_count} paywalled/premium articles from metadata.")
+                    try:
+                        df.to_parquet(metadata_path, index=False)
+                        logger.info(f"Saved cleaned metadata parquet ({filtered_count} rows) back to disk.")
+                    except Exception as e:
+                        logger.error(f"Error saving cleaned metadata parquet: {e}")
         except Exception as e:
             logger.error(f"Error reading metadata parquet file: {e}")
     else:
