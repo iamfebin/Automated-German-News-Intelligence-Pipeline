@@ -40,7 +40,8 @@ def download_from_hf(repo_id: str, token: Optional[str] = None) -> bool:
             filename=METADATA_FILENAME,
             repo_type="dataset",
             token=token,
-            local_dir=DATA_DIR
+            local_dir=DATA_DIR,
+            local_dir_use_symlinks=False
         )
         logger.info(f"Downloaded metadata to {downloaded_metadata}")
     except Exception as e:
@@ -55,7 +56,8 @@ def download_from_hf(repo_id: str, token: Optional[str] = None) -> bool:
             filename=INDEX_FILENAME,
             repo_type="dataset",
             token=token,
-            local_dir=DATA_DIR
+            local_dir=DATA_DIR,
+            local_dir_use_symlinks=False
         )
         logger.info(f"Downloaded FAISS index to {downloaded_index}")
     except Exception as e:
@@ -70,7 +72,8 @@ def download_from_hf(repo_id: str, token: Optional[str] = None) -> bool:
             filename=DRIFT_METRICS_FILENAME,
             repo_type="dataset",
             token=token,
-            local_dir=DATA_DIR
+            local_dir=DATA_DIR,
+            local_dir_use_symlinks=False
         )
         logger.info(f"Downloaded drift metrics to {downloaded_metrics}")
     except Exception as e:
@@ -84,7 +87,8 @@ def download_from_hf(repo_id: str, token: Optional[str] = None) -> bool:
             filename=DRIFT_REPORT_FILENAME,
             repo_type="dataset",
             token=token,
-            local_dir=DATA_DIR
+            local_dir=DATA_DIR,
+            local_dir_use_symlinks=False
         )
         logger.info(f"Downloaded drift report to {downloaded_report}")
     except Exception as e:
