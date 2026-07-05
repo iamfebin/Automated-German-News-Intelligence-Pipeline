@@ -6,7 +6,8 @@ import pandas as pd
 import numpy as np
 import faiss
 from huggingface_hub import hf_hub_download
-from src.drift_monitor import DRIFT_REPORT_FILENAME, DRIFT_METRICS_FILENAME
+from src.drift_monitor import DRIFT_REPORT_FILENAME, DRIFT_REPORT_JS_FILENAME, DRIFT_METRICS_FILENAME
+
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,23 @@ def download_from_hf(repo_id: str, token: Optional[str] = None) -> bool:
     except Exception as e:
         logger.warning(f"Could not download {DRIFT_REPORT_FILENAME} from Hugging Face: {e}. Using local or placeholder report.")
 
+    # Download Drift Report JS (Non-critical, log warning on failure)
+    try:
+        logger.info(f"Attempting to download {DRIFT_REPORT_JS_FILENAME} from Hugging Face dataset: {repo_id}")
+        downloaded_report_js = hf_hub_download(
+            repo_id=repo_id,
+            filename=DRIFT_REPORT_JS_FILENAME,
+            repo_type="dataset",
+            token=token,
+            local_dir=DATA_DIR,
+            local_dir_use_symlinks=False
+        )
+        logger.info(f"Downloaded drift report JS to {downloaded_report_js}")
+    except Exception as e:
+        logger.warning(f"Could not download {DRIFT_REPORT_JS_FILENAME} from Hugging Face: {e}. Report rendering might be affected.")
+
     return success
+
 
 
 def load_index_and_metadata(repo_id: Optional[str] = None, token: Optional[str] = None) -> Tuple[pd.DataFrame, Optional[faiss.Index]]:

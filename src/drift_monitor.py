@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import logging
 import warnings
@@ -12,6 +13,7 @@ from scipy.stats import wasserstein_distance
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 logger = logging.getLogger(__name__)
+
 
 # Try importing Evidently. If not installed, we'll log warnings or fallback.
 try:
@@ -30,7 +32,9 @@ except Exception as e:
 DATA_DIR = os.environ.get("DATA_DIR", "data")
 METADATA_FILENAME = "news_metadata.parquet"
 DRIFT_REPORT_FILENAME = "drift_report.html"
+DRIFT_REPORT_JS_FILENAME = "drift_report.js"
 DRIFT_METRICS_FILENAME = "drift_metrics.json"
+
 
 def calculate_psi(expected: np.ndarray, actual: np.ndarray, num_bins: int = 10) -> float:
     """
@@ -89,6 +93,62 @@ def compute_embedding_drift(ref_embeddings: np.ndarray, cur_embeddings: np.ndarr
         psi_scores.append(psi)
         
     return float(np.mean(wd_scores)), float(np.mean(psi_scores))
+
+def post_process_report_csp(report_path: str):
+    """
+    Post-processes the generated Evidently AI HTML report to extract all inline script tags
+    into a companion .js file. This prevents Content Security Policy (CSP) violations on hosting
+    environments (such as Hugging Face Spaces) that block unsafe inline scripts.
+    """
+    if not os.path.exists(report_path):
+        return
+        
+    try:
+        with open(report_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            
+        # Pattern to find all <script>...</script> blocks
+        pattern = re.compile(r"<script>(.*?)</script>", re.DOTALL)
+        matches = list(pattern.finditer(content))
+        
+        if not matches:
+            logger.info("No inline scripts found to extract.")
+            return
+            
+        scripts_to_combine = []
+        for match in matches:
+            scripts_to_combine.append(match.group(1))
+            
+        combined_js = "\n\n/* --- COMBINED SCRIPT --- */\n\n".join(scripts_to_combine)
+        
+        # Save to companion .js file (e.g. data/drift_report.js)
+        js_path = os.path.splitext(report_path)[0] + ".js"
+        with open(js_path, "w", encoding="utf-8") as js_f:
+            js_f.write(combined_js)
+            
+        logger.info(f"Successfully extracted inline scripts to {js_path}")
+        
+        # Replace script tags: keep first script tag as src reference, remove the rest
+        parts = []
+        last_end = 0
+        js_filename = os.path.basename(js_path)
+        for i, match in enumerate(matches):
+            start = match.start()
+            end = match.end()
+            parts.append(content[last_end:start])
+            if i == 0:
+                parts.append(f'<script src="{js_filename}"></script>')
+            last_end = end
+        parts.append(content[last_end:])
+        
+        new_html = "".join(parts)
+        
+        with open(report_path, "w", encoding="utf-8") as html_f:
+            html_f.write(new_html)
+            
+        logger.info("Successfully removed inline script tags from HTML report.")
+    except Exception as e:
+        logger.error(f"Failed to post-process HTML report for CSP: {e}", exc_info=True)
 
 def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
     """
@@ -189,9 +249,10 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
             logger.info("Running Evidently AI text drift metrics...")
             snapshot = report.run(current_data=cur_dataset, reference_data=ref_dataset)
             snapshot.save_html(report_path)
+            post_process_report_csp(report_path)
 
             metrics["evidently_report_generated"] = True
-            logger.info(f"Evidently AI HTML report saved to {report_path}")
+            logger.info(f"Evidently AI HTML report saved to {report_path} (post-processed for CSP)")
         except Exception as e:
             logger.error(f"Failed to generate Evidently AI report: {e}")
     else:
