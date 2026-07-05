@@ -17,12 +17,13 @@ logger = logging.getLogger(__name__)
 
 # Try importing Evidently. If not installed, we'll log warnings or fallback.
 try:
-    from evidently import Report, Dataset, DataDefinition
-    from evidently.presets import TextEvals
+    from evidently.legacy.report import Report
+    from evidently.legacy.metric_preset import TextEvals
     EVIDENTLY_AVAILABLE = True
 except Exception as e:
     logger.warning(f"Evidently AI import failed: {e}. Diagnostics will fallback to mathematical metrics.")
     EVIDENTLY_AVAILABLE = False
+
 
 
 
@@ -237,18 +238,13 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
             ref_texts = reference_df[["body_de"]].copy()
             cur_texts = current_df[["body_de"]].copy()
             
-            # Wrap pandas DataFrames in Evidently Dataset objects with DataDefinition
-            data_definition = DataDefinition(text_columns=["body_de"])
-            ref_dataset = Dataset.from_pandas(ref_texts, data_definition=data_definition)
-            cur_dataset = Dataset.from_pandas(cur_texts, data_definition=data_definition)
-            
             report = Report(metrics=[
-                TextEvals()
+                TextEvals(column_name="body_de")
             ])
             
             logger.info("Running Evidently AI text drift metrics...")
-            snapshot = report.run(current_data=cur_dataset, reference_data=ref_dataset)
-            snapshot.save_html(report_path)
+            report.run(current_data=cur_texts, reference_data=ref_texts)
+            report.save_html(report_path)
             post_process_report_csp(report_path)
 
             metrics["evidently_report_generated"] = True
