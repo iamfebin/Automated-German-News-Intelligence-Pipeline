@@ -138,7 +138,7 @@ def post_process_report_csp(report_path: str):
             end = match.end()
             parts.append(content[last_end:start])
             if i == 0:
-                parts.append(f'<script src="{js_filename}"></script>')
+                parts.append(f'<script defer src="{js_filename}"></script>')
             last_end = end
         parts.append(content[last_end:])
         
