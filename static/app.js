@@ -116,9 +116,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 5. Load Drift Report Iframe
     function loadDriftReportIframe() {
-        iframeContainer.innerHTML = '<iframe src="/data/text_drift_report.html"></iframe>';
+        iframeContainer.innerHTML = '<iframe src="/data/drift_report.html"></iframe>';
         driftReportLoaded = true;
     }
+
 
     // 6. Perform Vector Search Query
     async function performSearch() {

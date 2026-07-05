@@ -224,7 +224,7 @@ def sync_db():
     init_db()
     return JSONResponse(content={"status": "success", "article_count": len(df_meta) if not df_meta.empty else 0})
 
-# Serve static files and data files (like text_drift_report.html)
+# Serve static files and data files (like drift_report.html)
 # We place these mounts after API routes to avoid matching overrides
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")

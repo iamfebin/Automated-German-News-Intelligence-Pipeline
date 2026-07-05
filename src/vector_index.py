@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import faiss
 from huggingface_hub import hf_hub_download
+from src.drift_monitor import DRIFT_REPORT_FILENAME, DRIFT_METRICS_FILENAME
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,36 @@ def download_from_hf(repo_id: str, token: Optional[str] = None) -> bool:
         logger.warning(f"Could not download {INDEX_FILENAME} from Hugging Face: {e}. Starting fresh or using local copy.")
         success = False
 
+    # Download Drift Metrics (Non-critical, log warning on failure)
+    try:
+        logger.info(f"Attempting to download {DRIFT_METRICS_FILENAME} from Hugging Face dataset: {repo_id}")
+        downloaded_metrics = hf_hub_download(
+            repo_id=repo_id,
+            filename=DRIFT_METRICS_FILENAME,
+            repo_type="dataset",
+            token=token,
+            local_dir=DATA_DIR
+        )
+        logger.info(f"Downloaded drift metrics to {downloaded_metrics}")
+    except Exception as e:
+        logger.warning(f"Could not download {DRIFT_METRICS_FILENAME} from Hugging Face: {e}. Using local or placeholder metrics.")
+
+    # Download Drift Report HTML (Non-critical, log warning on failure)
+    try:
+        logger.info(f"Attempting to download {DRIFT_REPORT_FILENAME} from Hugging Face dataset: {repo_id}")
+        downloaded_report = hf_hub_download(
+            repo_id=repo_id,
+            filename=DRIFT_REPORT_FILENAME,
+            repo_type="dataset",
+            token=token,
+            local_dir=DATA_DIR
+        )
+        logger.info(f"Downloaded drift report to {downloaded_report}")
+    except Exception as e:
+        logger.warning(f"Could not download {DRIFT_REPORT_FILENAME} from Hugging Face: {e}. Using local or placeholder report.")
+
     return success
+
 
 def load_index_and_metadata(repo_id: Optional[str] = None, token: Optional[str] = None) -> Tuple[pd.DataFrame, Optional[faiss.Index]]:
     """

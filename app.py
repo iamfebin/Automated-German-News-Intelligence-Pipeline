@@ -429,6 +429,7 @@ with tab1:
                                 "LOC": "Location",
                                 "PER": "Person",
                                 "ORG": "Organization",
+                                "ORGPART": "Organization Part",
                                 "LOCDERIV": "Location Derivative",
                                 "PERDERIV": "Person Derivative"
                             }
