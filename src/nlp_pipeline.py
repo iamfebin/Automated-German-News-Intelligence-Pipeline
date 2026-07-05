@@ -13,6 +13,45 @@ logger = logging.getLogger(__name__)
 NER_MODEL_NAME = os.environ.get("NER_MODEL_NAME", "fhswf/bert_de_ner")
 EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
+def merge_subword_entities(entities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Merges subword tokens (starting with ##) back into their parent words
+    and capitalizes the first letter of each word if it starts with a lowercase letter.
+    """
+    merged = []
+    for item in entities:
+        word = str(item.get("word", "")).strip()
+        etype = str(item.get("entity", "")).strip()
+        score = float(item.get("score", 0.0))
+        
+        if not word:
+            continue
+            
+        if word.startswith("##") and merged:
+            # Append subword content to the previous entity
+            merged[-1]["word"] += word[2:]
+            # Average the score
+            merged[-1]["score"] = (merged[-1]["score"] + score) / 2
+        else:
+            merged.append({
+                "word": word,
+                "entity": etype,
+                "score": score
+            })
+            
+    # Post-process to capitalize lowercase words and clean up
+    for item in merged:
+        word = item["word"]
+        # Clean up any residual ##
+        if word.startswith("##"):
+            word = word[2:]
+            
+        # Capitalize first letter of each word if it starts with lowercase
+        words = [w.capitalize() if w and w[0].islower() else w for w in word.split()]
+        item["word"] = " ".join(words)
+        
+    return merged
+
 class NLPPipeline:
     def __init__(self):
         self.ner_pipeline = None
@@ -56,14 +95,14 @@ class NLPPipeline:
             truncated_text = text[:1500]
             results = ner(truncated_text)
             
-            entities = []
+            raw_entities = []
             for item in results:
-                entities.append({
+                raw_entities.append({
                     "word": str(item.get("word", "")),
                     "entity": str(item.get("entity_group", "")),
                     "score": float(item.get("score", 0.0))
                 })
-            return entities
+            return merge_subword_entities(raw_entities)
         except Exception as e:
             logger.error(f"Error during NER extraction: {e}")
             return []

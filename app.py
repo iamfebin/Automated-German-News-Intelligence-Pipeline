@@ -32,6 +32,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.vector_index import load_index_and_metadata, query_vector_search
 from src.drift_monitor import DRIFT_REPORT_FILENAME, DRIFT_METRICS_FILENAME, DATA_DIR
+from src.nlp_pipeline import merge_subword_entities
 
 # Safe loading of Streamlit secrets to prevent crash if secrets.toml is missing
 try:
@@ -396,18 +397,26 @@ with tab1:
                         # NER badge tags
                         badge_html = ""
                         entities = res["entities"]
+                        
+                        # Merge subwords on-the-fly (handles legacy data)
+                        merged_entities = merge_subword_entities(entities)
                         seen_badges = set()
                         
-                        for ent in entities:
+                        for ent in merged_entities:
                             word = ent["word"].strip()
                             etype = ent["entity"].lower()
+                            
+                            # Skip empty or single-character noise
+                            if not word or len(word) <= 1:
+                                continue
+                                
                             # Deduplicate entities
                             badge_key = f"{word}||{etype}"
                             if badge_key in seen_badges:
                                 continue
                             seen_badges.add(badge_key)
                             
-                            b_class = "badge-per" if etype == "per" else "badge-loc" if etype == "loc" else "badge-org"
+                            b_class = "badge-per" if etype == "per" else "badge-loc" if etype in ("loc", "locderiv") else "badge-org"
                             badge_html += f"<span class='badge {b_class}'>{etype.upper()}: {word}</span>"
                             
                         # Source badge color

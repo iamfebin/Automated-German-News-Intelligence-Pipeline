@@ -16,6 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.scraper import clean_german_text, generate_article_id, RSS_FEEDS, is_paywalled_content
 from src.drift_monitor import calculate_psi, compute_embedding_drift
 from src.vector_index import query_vector_search
+from src.nlp_pipeline import merge_subword_entities
 
 class TestPipelineComponents(unittest.TestCase):
 
@@ -149,6 +150,28 @@ class TestPipelineComponents(unittest.TestCase):
             url="https://www.spiegel.de/panorama/justiz/hitze-41-3-grad-wetterdienst-meldet-deutschlandweiten-hitzerekord-a-d2d0c242-a320-43d9-95e2-6385e054bd38",
             body=gifted_body
         ))
+
+    def test_merge_subword_entities(self):
+        logger.info("Running test_merge_subword_entities...")
+        raw_entities = [
+            {"word": "deutsch", "entity": "LOC", "score": 0.99},
+            {"word": "##land", "entity": "LOC", "score": 0.97},
+            {"word": "andreas", "entity": "PER", "score": 0.95},
+            {"word": "knie", "entity": "PER", "score": 0.90},
+            {"word": "sach", "entity": "LOCDERIV", "score": 0.92},
+            {"word": "##sis", "entity": "LOCDERIV", "score": 0.88}
+        ]
+        
+        merged = merge_subword_entities(raw_entities)
+        
+        self.assertEqual(len(merged), 4)
+        self.assertEqual(merged[0]["word"], "Deutschland")
+        self.assertEqual(merged[0]["entity"], "LOC")
+        self.assertAlmostEqual(merged[0]["score"], 0.98)
+        self.assertEqual(merged[1]["word"], "Andreas")
+        self.assertEqual(merged[2]["word"], "Knie")
+        self.assertEqual(merged[3]["word"], "Sachsis")
+        self.assertEqual(merged[3]["entity"], "LOCDERIV")
 
 if __name__ == "__main__":
     unittest.main()
