@@ -19,32 +19,9 @@ try:
     from evidently.metric_preset import TextDataDriftPreset
     EVIDENTLY_AVAILABLE = True
 except Exception as e:
-    logger.warning(f"Evidently AI import failed: {e}. Diagnostics will fallback to mathematical metrics.", exc_info=True)
-    # Inline debugging for GitHub Actions runner environment
-    try:
-        import sys
-        logger.info(f"DEBUG - sys.executable: {sys.executable}")
-        logger.info(f"DEBUG - sys.path: {sys.path}")
-        
-        # Check if evidently folder exists in site-packages
-        import importlib.util
-        spec = importlib.util.find_spec("evidently")
-        if spec:
-            logger.info(f"DEBUG - evidently spec: {spec}")
-            if spec.submodule_search_locations:
-                for loc in spec.submodule_search_locations:
-                    logger.info(f"DEBUG - evidently search location: {loc}")
-                    if os.path.exists(loc):
-                        logger.info(f"DEBUG - content of evidently directory: {os.listdir(loc)}")
-        else:
-            logger.info("DEBUG - evidently spec is None (package not found)")
-            
-        import pkg_resources
-        dist = pkg_resources.get_distribution("evidently")
-        logger.info(f"DEBUG - evidently package: {dist.project_name} {dist.version} at {dist.location}")
-    except Exception as debug_err:
-        logger.warning(f"DEBUG - Failed to get package debug info: {debug_err}")
+    logger.warning(f"Evidently AI import failed: {e}. Diagnostics will fallback to mathematical metrics.")
     EVIDENTLY_AVAILABLE = False
+
 
 
 
