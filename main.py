@@ -15,8 +15,13 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+import mimetypes
+# Ensure standard JavaScript MIME type mapping is configured
+mimetypes.add_type("application/javascript", ".js")
+
 # Suppress warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning)
+
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] (%(filename)s:%(lineno)d) - %(message)s")
