@@ -15,12 +15,14 @@ logger = logging.getLogger(__name__)
 
 # Try importing Evidently. If not installed, we'll log warnings or fallback.
 try:
-    from evidently.report import Report
-    from evidently.metric_preset import TextDataDriftPreset
+    from evidently import Report, Dataset, DataDefinition
+    from evidently.presets import TextEvals
     EVIDENTLY_AVAILABLE = True
 except Exception as e:
     logger.warning(f"Evidently AI import failed: {e}. Diagnostics will fallback to mathematical metrics.")
     EVIDENTLY_AVAILABLE = False
+
+
 
 
 
@@ -170,19 +172,24 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
     # 2. Generate Evidently AI HTML Report
     if EVIDENTLY_AVAILABLE:
         try:
-            # evidently expects text columns. We'll run TextDataDriftPreset on body_de.
+            # evidently expects text columns. We'll run TextEvals on body_de.
             # We select only the columns needed to save memory
             ref_texts = reference_df[["body_de"]].copy()
             cur_texts = current_df[["body_de"]].copy()
             
-            # Rename columns if needed
+            # Wrap pandas DataFrames in Evidently Dataset objects with DataDefinition
+            data_definition = DataDefinition(text_columns=["body_de"])
+            ref_dataset = Dataset.from_pandas(ref_texts, data_definition=data_definition)
+            cur_dataset = Dataset.from_pandas(cur_texts, data_definition=data_definition)
+            
             report = Report(metrics=[
-                TextDataDriftPreset(column_name="body_de")
+                TextEvals()
             ])
             
             logger.info("Running Evidently AI text drift metrics...")
-            report.run(reference_data=ref_texts, current_data=cur_texts)
-            report.save_html(report_path)
+            snapshot = report.run(current_data=cur_dataset, reference_data=ref_dataset)
+            snapshot.save_html(report_path)
+
             metrics["evidently_report_generated"] = True
             logger.info(f"Evidently AI HTML report saved to {report_path}")
         except Exception as e:
