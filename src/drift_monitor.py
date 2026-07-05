@@ -11,15 +11,17 @@ from scipy.stats import wasserstein_distance
 # Suppress SyntaxWarnings from third-party libraries (like evidently under Python 3.12+)
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
+logger = logging.getLogger(__name__)
+
 # Try importing Evidently. If not installed, we'll log warnings or fallback.
 try:
     from evidently.report import Report
     from evidently.metric_preset import TextDataDriftPreset
     EVIDENTLY_AVAILABLE = True
-except ImportError:
+except Exception as e:
+    logger.warning(f"Evidently AI import failed: {e}. Diagnostics will fallback to mathematical metrics.", exc_info=True)
     EVIDENTLY_AVAILABLE = False
 
-logger = logging.getLogger(__name__)
 
 DATA_DIR = os.environ.get("DATA_DIR", "data")
 METADATA_FILENAME = "news_metadata.parquet"
