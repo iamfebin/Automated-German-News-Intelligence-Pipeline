@@ -32,6 +32,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements_etl.txt
 
+      - name: Debug Dependencies
+        run: |
+          pip show evidently || true
+          python -c "import evidently; print('Evidently path:', evidently.__file__)" || true
+
       - name: Run ETL Pipeline
         env:
           HF_REPO_ID: ${{ secrets.HF_REPO_ID }}
@@ -39,3 +44,4 @@ jobs:
           SCRAPER_LIMIT_PER_FEED: 10
         run: |
           python src/job_etl.py
+
