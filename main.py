@@ -228,8 +228,12 @@ def sync_db():
 # We place these mounts after API routes to avoid matching overrides
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
-if os.path.exists("data"):
-    app.mount("/data", StaticFiles(directory="data"), name="data")
+
+# Always ensure the data directory exists and is mounted at startup.
+# Since it is in .gitignore, it won't exist in the Docker image initially.
+os.makedirs("data", exist_ok=True)
+app.mount("/data", StaticFiles(directory="data"), name="data")
+
 
 if __name__ == "__main__":
     import uvicorn
