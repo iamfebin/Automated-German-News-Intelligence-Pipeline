@@ -394,31 +394,10 @@ with tab1:
                     st.markdown(f"#### Found {len(filtered_results)} contextually relevant articles:")
                     
                     for res in filtered_results:
-                        # NER badge tags
-                        badge_html = ""
-                        entities = res["entities"]
-                        
                         # Merge subwords on-the-fly (handles legacy data)
+                        entities = res["entities"]
                         merged_entities = merge_subword_entities(entities)
-                        seen_badges = set()
                         
-                        for ent in merged_entities:
-                            word = ent["word"].strip()
-                            etype = ent["entity"].lower()
-                            
-                            # Skip empty or single-character noise
-                            if not word or len(word) <= 1:
-                                continue
-                                
-                            # Deduplicate entities
-                            badge_key = f"{word}||{etype}"
-                            if badge_key in seen_badges:
-                                continue
-                            seen_badges.add(badge_key)
-                            
-                            b_class = "badge-per" if etype == "per" else "badge-loc" if etype in ("loc", "locderiv") else "badge-org"
-                            badge_html += f"<span class='badge {b_class}'>{etype.upper()}: {word}</span>"
-                            
                         # Source badge color
                         src = res["source"]
                         
@@ -440,11 +419,47 @@ with tab1:
                             <div style='margin-bottom: 10px;'>
                                 <a class='news-url-link' href='{res['url']}' target='_blank'>Read original article page ↗</a>
                             </div>
-                            <div class='entity-container'>
-                                {badge_html}
-                            </div>
                         </div>
                         """, unsafe_allow_html=True)
+                        
+                        # Collapsible segment for tags arranged by category
+                        with st.expander("Show Tags"):
+                            grouped_entities = {}
+                            category_map = {
+                                "LOC": "Location",
+                                "PER": "Person",
+                                "ORG": "Organization",
+                                "LOCDERIV": "Location Derivative",
+                                "PERDERIV": "Person Derivative"
+                            }
+                            
+                            for ent in merged_entities:
+                                word = ent["word"].strip()
+                                etype = ent["entity"].upper()
+                                
+                                if not word or len(word) <= 1:
+                                    continue
+                                    
+                                expanded_type = category_map.get(etype, etype)
+                                if expanded_type not in grouped_entities:
+                                    grouped_entities[expanded_type] = set()
+                                grouped_entities[expanded_type].add(word)
+                                
+                            if grouped_entities:
+                                for category, words in sorted(grouped_entities.items()):
+                                    # Select badge style based on category
+                                    b_class = (
+                                        "badge-per" if category in ("Person", "Person Derivative")
+                                        else "badge-loc" if category in ("Location", "Location Derivative")
+                                        else "badge-org"
+                                    )
+                                    badges = "".join([
+                                        f"<span class='badge {b_class}' style='display: inline-block; margin-right: 5px; margin-bottom: 5px;'>{w}</span>"
+                                        for w in sorted(words)
+                                    ])
+                                    st.markdown(f"**{category}**<br><div style='margin-bottom: 10px;'>{badges}</div>", unsafe_allow_html=True)
+                            else:
+                                st.write("No named entities found in this article.")
                         
                         # Original text collapsible segment
                         with st.expander("Show Original German Text"):
