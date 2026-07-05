@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multilingual German News Intelligence Platform</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22 width=%2232%22 height=%2232%22><text y=%2226%22 font-size=%2228%22>📰</text></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="logo-emoji">📰</span>
+                <h2>News Intel</h2>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-tab="search-tab">
+                    <span class="icon">🔍</span> Semantic Search
+                </button>
+                <button class="nav-btn" data-tab="health-tab">
+                    <span class="icon">🩺</span> Ingestion Health
+                </button>
+            </nav>
+
+            <div class="sidebar-divider"></div>
+
+            <!-- Platform Configurations Info -->
+            <div class="sidebar-section">
+                <h3>Platform Config</h3>
+                <div class="info-card">
+                    <p class="info-label">HF Repository</p>
+                    <p id="hf-repo-val" class="info-value">Loading...</p>
+                </div>
+                <button id="sync-btn" class="action-btn">
+                    <span class="btn-icon">🔄</span> Sync & Refresh DB
+                </button>
+            </div>
+
+            <!-- Stats Breakdown -->
+            <div class="sidebar-section">
+                <h3>Articles Indexed</h3>
+                <div class="stats-card">
+                    <p class="stats-count" id="total-articles-val">0</p>
+                    <p class="stats-label">Total Articles</p>
+                </div>
+                <ul id="source-breakdown-list" class="source-list">
+                    <!-- Dynamic source breakdowns -->
+                </ul>
+            </div>
+            
+            <div class="sidebar-footer">
+                <p>Zero-Cost Serverless NLP Architecture</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="app-header">
+                <h1 class="main-title">Multilingual German News Intelligence</h1>
+                <p class="subtitle">Semantic search and localized intelligence across regional German news feeds (Tagesschau, DW, Spiegel)</p>
+            </header>
+
+            <!-- TAB 1: SEARCH PORTAL -->
+            <section id="search-tab" class="tab-content active">
+                <div class="search-controls-container">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="query-input" placeholder="Type your search in English or German (e.g. 'Energiekrise' or 'Scholz meeting French President')...">
+                        <button id="search-submit-btn" class="search-submit-btn">Search</button>
+                    </div>
+
+                    <div class="sliders-row">
+                        <div class="slider-control">
+                            <div class="slider-header">
+                                <label for="top-k-slider">Top Results</label>
+                                <span id="top-k-val" class="slider-badge">5</span>
+                            </div>
+                            <input type="range" id="top-k-slider" min="1" max="20" value="5">
+                        </div>
+
+                        <div class="slider-control">
+                            <div class="slider-header">
+                                <label for="threshold-slider">Relevance Threshold</label>
+                                <span id="threshold-val" class="slider-badge">0.35</span>
+                            </div>
+                            <input type="range" id="threshold-slider" min="0.0" max="1.0" step="0.05" value="0.35">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="results-status" class="results-status">
+                    <!-- Search status or warnings -->
+                </div>
+
+                <div id="search-results-list" class="search-results-list">
+                    <div class="placeholder-state">
+                        <span class="placeholder-icon">🔍</span>
+                        <p>Enter a query above to explore regional German news articles semantically.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: PIPELINE HEALTH -->
+            <section id="health-tab" class="tab-content">
+                <div class="health-overview-header">
+                    <h2>MLOps Ingestion Pipeline Health & Data Drift Diagnostics</h2>
+                    <p>Linguistic and semantic profile distributions shift as global news topics change. The metrics below display drift comparisons between today's ingestion batch and a rolling reference baseline of the past 14 days.</p>
+                </div>
+
+                <!-- Drift Metrics Cards -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">Embedding PSI</span>
+                        <span id="psi-val" class="metric-value">0.0000</span>
+                        <span class="metric-desc">Population Stability Index</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Wasserstein Distance</span>
+                        <span id="wasserstein-val" class="metric-value">0.0000</span>
+                        <span class="metric-desc">Earth Mover's Distance</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Pipeline Status</span>
+                        <span id="pipeline-status-val" class="metric-value status-normal">Loading...</span>
+                        <span class="metric-desc">Semantic Drift Threshold</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Sample Breakdown</span>
+                        <span id="sample-breakdown-val" class="metric-value">0 / 0</span>
+                        <span class="metric-desc">Validation / Reference Sizes</span>
+                    </div>
+                </div>
+                
+                <p id="drift-timestamp-val" class="timestamp-info">Drift report last updated: Unknown</p>
+
+                <div class="divider"></div>
+
+                <!-- Detailed Evidently Report iframe -->
+                <div class="report-section">
+                    <h3>Detailed Evidently AI Text Drift Diagnostics</h3>
+                    <div id="report-iframe-container" class="report-iframe-container">
+                        <div class="placeholder-report-state">
+                            <p>Loading Detailed Text Drift Report...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

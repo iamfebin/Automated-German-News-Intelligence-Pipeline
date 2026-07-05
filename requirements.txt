@@ -12,3 +12,6 @@ scikit-learn>=1.2.0
 scipy>=1.10.0
 sentencepiece>=0.1.99
 sacremoses>=0.0.53
+fastapi>=0.100.0
+uvicorn>=0.22.0
+
