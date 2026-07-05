@@ -88,7 +88,10 @@ def is_paywalled_content(title: str, url: str, body: str) -> bool:
         "nur für abonnenten",
         "alle artikel auf spiegel.de frei lesen",
         "unterstützen sie unabhängigen journalismus",
-        "dieser text ist für abonnenten"
+        "dieser text ist für abonnenten",
+        "angebot von spiegel+",
+        "angebot von spiegel plus",
+        "weil er ihnen geschenkt wurde"
     ]
     
     for sig in paywall_signatures:

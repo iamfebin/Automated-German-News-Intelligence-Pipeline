@@ -138,6 +138,17 @@ class TestPipelineComponents(unittest.TestCase):
             url="https://www.tagesschau.de/inland/normal-article.html",
             body="Das ist ein ganz normaler Nachrichtenartikel ohne Bezahlschranke."
         ))
+        
+        # Test Case 6: Gifted Spiegel+ article reported by user
+        gifted_body = (
+            "Dieser Artikel gehört zum Angebot von SPIEGEL+. "
+            "Sie können ihn auch ohne Abonnement lesen, weil er Ihnen geschenkt wurde."
+        )
+        self.assertTrue(is_paywalled_content(
+            title="Hitze: 41,3 Grad – Wetterdienst meldet deutschlandweiten Hitzerekord",
+            url="https://www.spiegel.de/panorama/justiz/hitze-41-3-grad-wetterdienst-meldet-deutschlandweiten-hitzerekord-a-d2d0c242-a320-43d9-95e2-6385e054bd38",
+            body=gifted_body
+        ))
 
 if __name__ == "__main__":
     unittest.main()
