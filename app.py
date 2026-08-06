@@ -4,6 +4,7 @@ import json
 import logging
 import warnings
 from typing import Tuple, Optional, List, Dict
+from collections import Counter
 
 # Suppress SyntaxWarnings from third-party libraries (like evidently under Python 3.12+)
 warnings.filterwarnings("ignore", category=SyntaxWarning)
@@ -196,6 +197,72 @@ if "hf_permission_error" not in st.session_state:
 
 df, index = get_cached_database(HF_REPO_ID, HF_TOKEN)
 
+# 1b. Cache extraction of trending topics from ingested article entity metadata
+@st.cache_data(show_spinner=False, ttl=900)
+def extract_trending_topics(df_metadata: pd.DataFrame, top_n: int = 10) -> List[Dict[str, any]]:
+    """
+    Extracts top named entities across ingested news articles, cleanly merged and categorized.
+    """
+    if df_metadata.empty or "entities" not in df_metadata.columns:
+        return []
+
+    entity_counts = Counter()
+    entity_types = {}
+
+    for raw in df_metadata["entities"].dropna():
+        if not raw:
+            continue
+        try:
+            ents = json.loads(raw) if isinstance(raw, str) else raw
+            if not isinstance(ents, list):
+                continue
+            merged = merge_subword_entities(ents)
+            seen_in_article = set()
+            for ent in merged:
+                word = ent.get("word", "").strip()
+                etype = ent.get("entity", "").upper()
+                if len(word) <= 2 or word.isdigit():
+                    continue
+                norm_word = word.title()
+                if norm_word in seen_in_article:
+                    continue
+                seen_in_article.add(norm_word)
+
+                entity_counts[norm_word] += 1
+                if norm_word not in entity_types:
+                    entity_types[norm_word] = etype
+        except Exception:
+            continue
+
+    category_icons = {
+        "PER": "👤",
+        "PERDERIV": "👤",
+        "LOC": "📍",
+        "LOCDERIV": "📍",
+        "ORG": "🏢",
+        "ORGPART": "🏢"
+    }
+
+    trending = []
+    for word, count in entity_counts.most_common(top_n * 2):
+        if count < 2:
+            continue
+        etype = entity_types.get(word, "MISC")
+        icon = category_icons.get(etype, "🏷️")
+        trending.append({
+            "name": word,
+            "count": count,
+            "type": etype,
+            "icon": icon
+        })
+        if len(trending) >= top_n:
+            break
+
+    return trending
+
+def set_search_query(q_text: str):
+    st.session_state["search_query_input"] = q_text
+
 # 2. Cached local embedding model for fallback
 @st.cache_resource
 def get_local_embedding_model():
@@ -343,11 +410,47 @@ tab1, tab2 = st.tabs(["🔍 Semantic Search Portal", "🩺 MLOps Pipeline Health
 
 # TAB 1: SEARCH PORTAL
 with tab1:
+    # Initialize search query in session state if missing
+    if "search_query_input" not in st.session_state:
+        st.session_state["search_query_input"] = ""
+
+    # Suggested Searches section
+    st.markdown("##### 💡 Suggested Searches")
+    suggested_queries = ["Olaf Scholz", "Energiekrise", "Donald Trump", "Ukraine", "Israel", "Klimawandel"]
+    sugg_cols = st.columns(len(suggested_queries))
+    for i, s_query in enumerate(suggested_queries):
+        with sugg_cols[i]:
+            st.button(
+                f"🔍 {s_query}",
+                key=f"sugg_{i}",
+                on_click=set_search_query,
+                args=(s_query,),
+                use_container_width=True
+            )
+
+    # Trending Topics section
+    trending_topics = extract_trending_topics(df, top_n=8)
+    if trending_topics:
+        st.markdown("##### 🔥 Trending Topics")
+        trend_cols = st.columns(len(trending_topics))
+        for idx, t in enumerate(trending_topics):
+            with trend_cols[idx]:
+                st.button(
+                    f"{t['icon']} {t['name']} ({t['count']})",
+                    key=f"trend_{idx}",
+                    on_click=set_search_query,
+                    args=(t['name'],),
+                    use_container_width=True
+                )
+
+    st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
+
     col1, col2, col3 = st.columns([3, 1, 1])
     with col1:
         query = st.text_input(
             label="Search Query",
             placeholder="Type your search in English or German (e.g., 'Scholz meeting with French President' or 'Energiekrise')...",
+            key="search_query_input",
             label_visibility="collapsed"
         )
     with col2:
