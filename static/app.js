@@ -70,6 +70,47 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Suggested Searches click handling
+    const suggestedBtns = document.querySelectorAll("#suggested-searches-list .chip-btn");
+    suggestedBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const query = btn.getAttribute("data-query");
+            if (query) {
+                queryInput.value = query;
+                performSearch();
+            }
+        });
+    });
+
+    // Fetch and render Trending Topics
+    async function fetchTrendingTopics() {
+        try {
+            const response = await fetch("/api/trending");
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            const trendingContainer = document.getElementById("trending-container");
+            const trendingList = document.getElementById("trending-topics-list");
+            
+            if (data.trending && data.trending.length > 0) {
+                trendingList.innerHTML = "";
+                data.trending.forEach(item => {
+                    const btn = document.createElement("button");
+                    btn.className = "chip-btn";
+                    btn.innerHTML = `${item.icon} ${item.name} <span style="opacity:0.7; font-size:0.75rem;">(${item.count})</span>`;
+                    btn.addEventListener("click", () => {
+                        queryInput.value = item.name;
+                        performSearch();
+                    });
+                    trendingList.appendChild(btn);
+                });
+                trendingContainer.style.display = "flex";
+            }
+        } catch (error) {
+            console.error("Error fetching trending topics:", error);
+        }
+    }
+
     // 4. Fetch Platform Status
     async function fetchPlatformStatus() {
         try {
@@ -269,6 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             showToast(`Sync complete! Database now contains ${data.article_count} articles.`, "success");
             await fetchPlatformStatus();
+            await fetchTrendingTopics();
         } catch (error) {
             console.error("Sync error:", error);
             showToast("Sync failed. Check API log files.", "error");
@@ -290,4 +332,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Initial Loading
     fetchPlatformStatus();
+    fetchTrendingTopics();
 });

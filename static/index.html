@@ -65,6 +65,27 @@
 
             <!-- TAB 1: SEARCH PORTAL -->
             <section id="search-tab" class="tab-content active">
+                <div class="suggestions-container">
+                    <div class="suggestion-group">
+                        <span class="suggestion-title">💡 Suggested Searches</span>
+                        <div id="suggested-searches-list" class="chip-group">
+                            <button class="chip-btn" data-query="Olaf Scholz">🔍 Olaf Scholz</button>
+                            <button class="chip-btn" data-query="Energiekrise">🔍 Energiekrise</button>
+                            <button class="chip-btn" data-query="Donald Trump">🔍 Donald Trump</button>
+                            <button class="chip-btn" data-query="Ukraine">🔍 Ukraine</button>
+                            <button class="chip-btn" data-query="Israel">🔍 Israel</button>
+                            <button class="chip-btn" data-query="Klimawandel">🔍 Klimawandel</button>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-group" id="trending-container" style="display: none;">
+                        <span class="suggestion-title">🔥 Trending Topics</span>
+                        <div id="trending-topics-list" class="chip-group">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+
                 <div class="search-controls-container">
                     <div class="search-input-wrapper">
                         <input type="text" id="query-input" placeholder="Type your search in English or German (e.g. 'Energiekrise' or 'Scholz meeting French President')...">

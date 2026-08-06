@@ -252,6 +252,53 @@ body {
 }
 
 /* Tab 1: Search Panel styling */
+.suggestions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.suggestion-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.suggestion-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chip-btn {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chip-btn:hover {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-color: var(--primary-color);
+    color: #60a5fa;
+    transform: translateY(-1px);
+}
+
 .search-controls-container {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);

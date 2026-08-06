@@ -182,6 +182,67 @@ def get_status():
         "drift_metrics": drift_metrics
     })
 
+@app.get("/api/trending")
+def get_trending_topics(top_n: int = 8):
+    global df_meta
+    if df_meta.empty or "entities" not in df_meta.columns:
+        return JSONResponse(content={"trending": []})
+
+    from collections import Counter
+    entity_counts = Counter()
+    entity_types = {}
+
+    for raw in df_meta["entities"].dropna():
+        if not raw:
+            continue
+        try:
+            ents = json.loads(raw) if isinstance(raw, str) else raw
+            if not isinstance(ents, list):
+                continue
+            merged = merge_subword_entities(ents)
+            seen_in_article = set()
+            for ent in merged:
+                word = ent.get("word", "").strip()
+                etype = ent.get("entity", "").upper()
+                if len(word) <= 2 or word.isdigit():
+                    continue
+                norm_word = word.title()
+                if norm_word in seen_in_article:
+                    continue
+                seen_in_article.add(norm_word)
+
+                entity_counts[norm_word] += 1
+                if norm_word not in entity_types:
+                    entity_types[norm_word] = etype
+        except Exception:
+            continue
+
+    category_icons = {
+        "PER": "👤",
+        "PERDERIV": "👤",
+        "LOC": "📍",
+        "LOCDERIV": "📍",
+        "ORG": "🏢",
+        "ORGPART": "🏢"
+    }
+
+    trending = []
+    for word, count in entity_counts.most_common(top_n * 2):
+        if count < 2:
+            continue
+        etype = entity_types.get(word, "MISC")
+        icon = category_icons.get(etype, "🏷️")
+        trending.append({
+            "name": word,
+            "count": count,
+            "type": etype,
+            "icon": icon
+        })
+        if len(trending) >= top_n:
+            break
+
+    return JSONResponse(content={"trending": trending})
+
 @app.post("/api/search")
 def search(request: SearchRequest):
     global df_meta, faiss_index
