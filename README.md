@@ -1,12 +1,3 @@
----
-title: Multilingual German News Intelligence
-emoji: 📰
-colorFrom: blue
-colorTo: green
-sdk: docker
-pinned: false
----
-
 # Multilingual German News Intelligence Platform
 
 A zero-operational-cost, production-grade NLP pipeline and search application designed to ingest, process, embed, index, and monitor German-language news media. It enables English-speaking users to query regional German media semantically in English, returning contextual multilingual summaries, localized Named Entity Recognition (NER), and an automated MLOps data drift dashboard.
