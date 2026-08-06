@@ -606,6 +606,9 @@ with tab2:
             status_color = "#ef4444" # Red
         elif status == "Moderate Drift":
             status_color = "#f59e0b" # Yellow
+        elif status == "Insufficient Baseline Data":
+            status_color = "#9ca3af" # Gray
+
             
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
         

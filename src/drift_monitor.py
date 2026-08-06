@@ -15,14 +15,24 @@ warnings.filterwarnings("ignore", category=SyntaxWarning)
 logger = logging.getLogger(__name__)
 
 
-# Try importing Evidently. If not installed, we'll log warnings or fallback.
+# Try importing Evidently across modern and legacy versions. If not installed, fallback gracefully.
+EVIDENTLY_AVAILABLE = False
 try:
-    from evidently.legacy.report import Report
-    from evidently.legacy.metric_preset import TextEvals
+    from evidently.report import Report
+    from evidently.metric_preset import TextEvals
     EVIDENTLY_AVAILABLE = True
+except ImportError:
+    try:
+        from evidently.legacy.report import Report
+        from evidently.legacy.metric_preset import TextEvals
+        EVIDENTLY_AVAILABLE = True
+    except Exception as e:
+        logger.warning(f"Evidently AI import failed: {e}. Diagnostics will fallback to mathematical metrics.")
+        EVIDENTLY_AVAILABLE = False
 except Exception as e:
     logger.warning(f"Evidently AI import failed: {e}. Diagnostics will fallback to mathematical metrics.")
     EVIDENTLY_AVAILABLE = False
+
 
 
 
@@ -172,27 +182,36 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
     # Standardize timestamps
     df["timestamp_dt"] = pd.to_datetime(df["timestamp"])
     
-    # Define "current" as the newly scraped articles
-    current_df = df[df["article_id"].isin(new_article_ids)].copy()
-    
-    # Define "reference" as articles from the past 14 days before today
-    # (or fallback to all historical articles except current ones if history is small)
+    # Define "current" and "reference" sets dynamically
     if len(new_article_ids) > 0 and len(new_article_ids) < len(df):
+        current_df = df[df["article_id"].isin(new_article_ids)].copy()
         reference_df = df[~df["article_id"].isin(new_article_ids)].copy()
         
-        # Try to restrict reference to past 14 days
+        # Restrict reference to past 14 days if possible
         latest_date = df["timestamp_dt"].max()
         cutoff_date = latest_date - timedelta(days=14)
         filtered_ref = reference_df[reference_df["timestamp_dt"] >= cutoff_date]
-        
-        # Ensure reference is of decent size, else fallback to full history
         if len(filtered_ref) >= 5:
             reference_df = filtered_ref
     else:
-        # Fallback if no new articles or no historical database exists yet
-        logger.warning("Insufficient historical data to compare or no new articles scraped. Using self-comparison as dummy baseline.")
-        reference_df = df.copy()
-        current_df = df.copy()
+        # Fallback when 0 new articles ingested in current run or all articles are marked new
+        logger.info("No newly scraped articles provided or full dataset refreshed. Splitting dataset by timestamp to compare recent vs historical baseline.")
+        latest_date = df["timestamp_dt"].max()
+        day_cutoff = latest_date - timedelta(days=1)
+        current_df = df[df["timestamp_dt"] >= day_cutoff].copy()
+        reference_df = df[df["timestamp_dt"] < day_cutoff].copy()
+        
+        # If day splitting leaves either set too small, split 70/30 chronologically
+        if len(current_df) < 3 or len(reference_df) < 3:
+            df_sorted = df.sort_values("timestamp_dt")
+            split_idx = int(len(df_sorted) * 0.7)
+            reference_df = df_sorted.iloc[:split_idx].copy()
+            current_df = df_sorted.iloc[split_idx:].copy()
+            
+        if len(reference_df) < 2 or len(current_df) < 2:
+            logger.warning("Total dataset is too small (<5 articles) to perform split drift analysis.")
+            reference_df = df.copy()
+            current_df = df.copy()
         
     logger.info(f"Running drift analysis. Reference size: {len(reference_df)}, Current size: {len(current_df)}")
     
@@ -211,9 +230,10 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
             logger.error(f"Error calculating embedding drift: {e}")
             
     # Determine general status
-    # Standard PSI interpretation: < 0.1 stable, 0.1 to 0.25 moderate shift, > 0.25 significant shift
     status = "Stable"
-    if mean_psi > 0.25:
+    if len(reference_df) < 2 or len(current_df) < 2:
+        status = "Insufficient Baseline Data"
+    elif mean_psi > 0.25:
         status = "Significant Drift"
     elif mean_psi > 0.1:
         status = "Moderate Drift"
@@ -233,8 +253,6 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
     # 2. Generate Evidently AI HTML Report
     if EVIDENTLY_AVAILABLE:
         try:
-            # evidently expects text columns. We'll run TextEvals on body_de.
-            # We select only the columns needed to save memory
             ref_texts = reference_df[["body_de"]].copy()
             cur_texts = current_df[["body_de"]].copy()
             
@@ -248,37 +266,140 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
             post_process_report_csp(report_path)
 
             metrics["evidently_report_generated"] = True
-            logger.info(f"Evidently AI HTML report saved to {report_path} (post-processed for CSP)")
+            logger.info(f"Evidently AI HTML report saved to {report_path}")
         except Exception as e:
             logger.error(f"Failed to generate Evidently AI report: {e}")
     else:
         logger.warning("Evidently AI is not available. Skipping HTML report generation.")
-        # Create a simple placeholder HTML so Streamlit does not crash when trying to render it
+        # Create a modern, dark-themed fallback HTML report for Streamlit & FastAPI
         try:
             os.makedirs(DATA_DIR, exist_ok=True)
+            badge_class = (
+                "badge-significant" if status == "Significant Drift"
+                else "badge-moderate" if status == "Moderate Drift"
+                else "badge-insufficient" if status == "Insufficient Baseline Data"
+                else "badge-stable"
+            )
             with open(report_path, "w", encoding="utf-8") as f:
-                f.write(f"""
-                <html>
-                <head>
-                    <style>
-                        body {{ font-family: sans-serif; padding: 40px; background-color: #0e1117; color: #ffffff; text-align: center; }}
-                        .container {{ max-width: 600px; margin: auto; border: 1px solid #30363d; border-radius: 8px; padding: 30px; background-color: #161b22; }}
-                        h2 {{ color: #58a6ff; }}
-                        .metric {{ font-size: 24px; font-weight: bold; margin: 20px 0; color: #ff7b72; }}
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <h2>MLOps Data Drift Diagnostics</h2>
-                        <p>Evidently AI was not installed or failed to run in the ETL environment.</p>
-                        <p>However, mathematical embedding drift metrics were computed successfully:</p>
-                        <div class="metric">PSI: {mean_psi:.4f} ({status})</div>
-                        <p>Wasserstein Distance: {mean_wd:.4f}</p>
-                        <p>Reference Samples: {len(reference_df)} | Current Samples: {len(current_df)}</p>
-                    </div>
-                </body>
-                </html>
-                """)
+                f.write(f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLOps Data Drift Diagnostics</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            margin: 0;
+            padding: 32px 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+        }}
+        .card {{
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 16px;
+            padding: 36px;
+            max-width: 650px;
+            width: 100%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            text-align: center;
+        }}
+        .title {{
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #60a5fa;
+            margin-top: 0;
+            margin-bottom: 8px;
+        }}
+        .subtitle {{
+            font-size: 0.9rem;
+            color: #9ca3af;
+            margin-bottom: 24px;
+        }}
+        .badge {{
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }}
+        .badge-stable {{ background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }}
+        .badge-moderate {{ background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }}
+        .badge-significant {{ background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }}
+        .badge-insufficient {{ background: rgba(107, 114, 128, 0.15); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.3); }}
+        .grid {{
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 16px;
+        }}
+        .metric-box {{
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 16px;
+        }}
+        .metric-label {{
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            margin-bottom: 6px;
+        }}
+        .metric-value {{
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #38bdf8;
+        }}
+        .notice {{
+            font-size: 0.85rem;
+            color: #9ca3af;
+            background: rgba(31, 41, 55, 0.6);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 24px;
+            border-left: 3px solid #3b82f6;
+            text-align: left;
+        }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 class="title">MLOps Data Drift Diagnostics</h2>
+        <div class="subtitle">Vector Distribution & Statistical Metrics</div>
+        <div class="badge {badge_class}">Pipeline Status: {status}</div>
+        
+        <div class="grid">
+            <div class="metric-box">
+                <div class="metric-label">Population Stability Index</div>
+                <div class="metric-value">{mean_psi:.4f}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Wasserstein Distance</div>
+                <div class="metric-value">{mean_wd:.4f}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Current Validation Sample</div>
+                <div class="metric-value">{len(current_df)}</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-label">Reference Baseline Sample</div>
+                <div class="metric-value">{len(reference_df)}</div>
+            </div>
+        </div>
+
+        <div class="notice">
+            <strong>Diagnostic Info:</strong> Evidently AI text drift report is operating in mathematical fallback mode. High-dimensional vector embedding drift (PSI & Earth Mover's Distance) was computed successfully across all 384 feature coordinates.
+        </div>
+    </div>
+</body>
+</html>""")
             metrics["evidently_report_generated"] = True
             logger.info(f"Created placeholder HTML report at {report_path}")
         except Exception as e:

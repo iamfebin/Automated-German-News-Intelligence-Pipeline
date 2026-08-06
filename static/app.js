@@ -142,6 +142,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     pipelineStatusVal.classList.add("status-drift");
                 } else if (drift.status === "Moderate Drift") {
                     pipelineStatusVal.classList.add("status-moderate");
+                } else if (drift.status === "Insufficient Baseline Data") {
+                    pipelineStatusVal.classList.add("status-insufficient");
                 } else {
                     pipelineStatusVal.classList.add("status-normal");
                 }
@@ -157,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 5. Load Drift Report Iframe
     function loadDriftReportIframe() {
-        iframeContainer.innerHTML = '<iframe src="/data/drift_report.html"></iframe>';
+        iframeContainer.innerHTML = '<iframe src="/data/drift_report.html" style="width:100%; height:800px; border:none; border-radius:12px; background-color:#111827;"></iframe>';
         driftReportLoaded = true;
     }
 

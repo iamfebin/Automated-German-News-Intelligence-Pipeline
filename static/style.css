@@ -659,6 +659,7 @@ details[open] summary::after {
 .metric-value.status-normal { color: var(--success-color); }
 .metric-value.status-moderate { color: var(--warning-color); }
 .metric-value.status-drift { color: var(--danger-color); }
+.metric-value.status-insufficient { color: var(--text-muted); }
 
 .metric-desc {
     font-size: 0.78rem;
