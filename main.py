@@ -70,6 +70,7 @@ class SearchRequest(BaseModel):
     query: str
     top_k: int = 5
     threshold: float = 0.35
+    sort_by: str = "relevance"  # 'relevance' or 'newest'
 
 def get_local_embedding_model():
     global local_transformer
@@ -279,6 +280,10 @@ def search(request: SearchRequest):
                     "entities": cleaned_entities,
                     "similarity_score": res["similarity_score"]
                 })
+
+        if request.sort_by == "newest":
+            filtered.sort(key=lambda x: str(x.get("timestamp", "")), reverse=True)
+
         return JSONResponse(content={"results": filtered})
     except Exception as e:
         logger.error(f"Error during search: {e}")

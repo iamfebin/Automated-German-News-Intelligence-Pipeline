@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const topKVal = document.getElementById("top-k-val");
     const thresholdSlider = document.getElementById("threshold-slider");
     const thresholdVal = document.getElementById("threshold-val");
+    const sortOrderSelect = document.getElementById("sort-order-select");
 
     const syncBtn = document.getElementById("sync-btn");
     const toast = document.getElementById("toast");
@@ -148,6 +149,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 3. Search submit logic
     searchBtn.addEventListener("click", performSearch);
+    if (sortOrderSelect) {
+        sortOrderSelect.addEventListener("change", () => {
+            if (queryInput.value.trim()) {
+                performSearch();
+            }
+        });
+    }
     queryInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
             performSearch();
@@ -351,12 +359,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const topK = parseInt(topKSlider.value);
         const threshold = parseFloat(thresholdSlider.value);
+        const sortBy = sortOrderSelect ? sortOrderSelect.value : "relevance";
 
         try {
             const response = await fetch("/api/search", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query, top_k: topK, threshold })
+                body: JSON.stringify({ query, top_k: topK, threshold, sort_by: sortBy })
             });
 
             if (!response.ok) throw new Error("Search request failed");
@@ -375,8 +384,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            // Sort results if "newest" is selected
+            const sortMode = sortOrderSelect ? sortOrderSelect.value : "relevance";
+            if (sortMode === "newest") {
+                results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            }
+
             // Render Results
-            resultsStatus.innerHTML = `<p class="match-count">Found ${results.length} contextually relevant articles:</p>`;
+            resultsStatus.innerHTML = `<p class="match-count">Found ${results.length} contextually relevant articles (${sortMode === "newest" ? "Sorted by Newest First" : "Sorted by Relevance"}):</p>`;
             searchResults.innerHTML = "";
 
             results.forEach(item => {

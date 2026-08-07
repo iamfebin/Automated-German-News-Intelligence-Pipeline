@@ -4,6 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-site-verification" content="NlHlWXeJZeOW6dED8ve_CQDaA9_JuxmoHUYXuwuMfyM" />
+    <meta name="author" content="Febin Babu">
+    <meta name="description"
+        content="Access real-time multilingual intelligence, automated translations, and analysis of German news pipelines." />
+    <meta name="keywords"
+        content="German news, semantic search, multilingual intelligence, automated translations, news analysis, German news pipeline, Tagesschau, DW, Spiegel" />
     <title>Multilingual German News Intelligence Platform</title>
     <!-- Google Fonts: Geist & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -146,6 +152,16 @@
                             </div>
                             <input type="range" id="threshold-slider" min="0.0" max="1.0" step="0.05" value="0.35">
                         </div>
+
+                        <div class="slider-control sort-control">
+                            <div class="slider-header">
+                                <label for="sort-order-select">Sort By</label>
+                            </div>
+                            <select id="sort-order-select" class="sort-select">
+                                <option value="relevance">Relevance (Default)</option>
+                                <option value="newest">Newest First</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -234,7 +250,8 @@
 
                     <!-- Native Text Property Drift Table -->
                     <div class="native-dashboard-card">
-                        <h4 class="card-subtitle"><span class="material-symbols-outlined">table_chart</span> Text Descriptor Shift Summary</h4>
+                        <h4 class="card-subtitle"><span class="material-symbols-outlined">table_chart</span> Text
+                            Descriptor Shift Summary</h4>
                         <div class="table-responsive">
                             <table class="drift-table">
                                 <thead>
@@ -257,7 +274,8 @@
 
                     <!-- Visual Distribution Bins Grid -->
                     <div class="native-dashboard-card" style="margin-top: 20px;">
-                        <h4 class="card-subtitle"><span class="material-symbols-outlined">bar_chart</span> Feature Distribution Bins (Baseline vs Validation)</h4>
+                        <h4 class="card-subtitle"><span class="material-symbols-outlined">bar_chart</span> Feature
+                            Distribution Bins (Baseline vs Validation)</h4>
                         <div id="distribution-cards-grid" class="dist-grid">
                             <div class="table-loading-text">Loading feature distributions...</div>
                         </div>
