@@ -95,9 +95,8 @@ def download_from_hf(repo_id: str, token: Optional[str] = None) -> bool:
     except Exception as e:
         logger.warning(f"Could not download {DRIFT_REPORT_FILENAME} from Hugging Face: {e}. Using local or placeholder report.")
 
-    # Download Drift Report JS (Non-critical, log warning on failure)
+    # Download Drift Report JS if present (Optional companion file)
     try:
-        logger.info(f"Attempting to download {DRIFT_REPORT_JS_FILENAME} from Hugging Face dataset: {repo_id}")
         downloaded_report_js = hf_hub_download(
             repo_id=repo_id,
             filename=DRIFT_REPORT_JS_FILENAME,
@@ -107,8 +106,9 @@ def download_from_hf(repo_id: str, token: Optional[str] = None) -> bool:
             local_dir_use_symlinks=False
         )
         logger.info(f"Downloaded drift report JS to {downloaded_report_js}")
-    except Exception as e:
-        logger.warning(f"Could not download {DRIFT_REPORT_JS_FILENAME} from Hugging Face: {e}. Report rendering might be affected.")
+    except Exception:
+        # JS companion is optional since drift_report.html is self-contained
+        pass
 
     return success
 

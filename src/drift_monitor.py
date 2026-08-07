@@ -253,20 +253,21 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
     # 2. Generate Evidently AI HTML Report
     if EVIDENTLY_AVAILABLE:
         try:
-            ref_texts = reference_df[["body_de"]].copy()
-            cur_texts = current_df[["body_de"]].copy()
+            # Rename column for clean display labels in Evidently report
+            ref_texts = reference_df[["body_de"]].rename(columns={"body_de": "German News Text"}).copy()
+            cur_texts = current_df[["body_de"]].rename(columns={"body_de": "German News Text"}).copy()
             
             report = Report(metrics=[
-                TextEvals(column_name="body_de")
+                TextEvals(column_name="German News Text")
             ])
             
             logger.info("Running Evidently AI text drift metrics...")
             report.run(current_data=cur_texts, reference_data=ref_texts)
+            # Save self-contained HTML report with inline JS so iframe executes Plotly/Evidently scripts
             report.save_html(report_path)
-            post_process_report_csp(report_path)
 
             metrics["evidently_report_generated"] = True
-            logger.info(f"Evidently AI HTML report saved to {report_path}")
+            logger.info(f"Evidently AI self-contained HTML report saved to {report_path}")
         except Exception as e:
             logger.error(f"Failed to generate Evidently AI report: {e}")
     else:
