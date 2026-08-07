@@ -9,6 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 6 # Automatically cancels the job if it hangs past 6 minutes
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

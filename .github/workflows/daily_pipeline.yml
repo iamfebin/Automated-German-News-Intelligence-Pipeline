@@ -8,6 +8,7 @@ on:
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
+    timeout-minutes: 7 # Automatically cancels the job if it hangs past 7 minutes
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
