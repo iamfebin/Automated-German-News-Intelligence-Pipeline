@@ -214,9 +214,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 sourceBreakdownList.appendChild(li);
             });
 
-            // Render native text drift dashboard
+            // Update KPI metric cards if drift_metrics loaded
             if (data.drift_metrics) {
-                renderNativeDriftDashboard(data.drift_metrics);
+                const metrics = data.drift_metrics;
+                if (metrics.embedding_drift) {
+                    const drift = metrics.embedding_drift;
+                    if (psiVal) psiVal.textContent = parseFloat(drift.population_stability_index || 0).toFixed(4);
+                    if (wassersteinVal) wassersteinVal.textContent = parseFloat(drift.wasserstein_distance || 0).toFixed(4);
+
+                    if (pipelineStatusVal) {
+                        pipelineStatusVal.textContent = drift.status || "Unknown";
+                        pipelineStatusVal.className = "metric-value";
+                        if (drift.status === "Significant Drift") {
+                            pipelineStatusVal.classList.add("status-drift");
+                        } else if (drift.status === "Moderate Drift") {
+                            pipelineStatusVal.classList.add("status-moderate");
+                        } else if (drift.status === "Insufficient Baseline Data") {
+                            pipelineStatusVal.classList.add("status-insufficient");
+                        } else {
+                            pipelineStatusVal.classList.add("status-normal");
+                        }
+                    }
+                }
+
+                if (sampleBreakdownVal) {
+                    sampleBreakdownVal.textContent = `${metrics.current_count || 0} / ${metrics.reference_count || 0}`;
+                }
+                if (driftTimestampVal) {
+                    driftTimestampVal.textContent = `Drift report last updated: ${metrics.timestamp ? new Date(metrics.timestamp).toLocaleString() : "Unknown"}`;
+                }
+
+                // Render native text drift dashboard
+                renderNativeDriftDashboard(metrics);
             }
         } catch (error) {
             console.error("Error loading status:", error);
