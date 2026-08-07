@@ -8,9 +8,6 @@ on:
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
     timeout-minutes: 7 # Automatically cancels the job if it hangs past 7 minutes
     steps:
       - name: Checkout Codebase
@@ -27,7 +24,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
-          key: ${{ runner.os }}-hf-cache-${{ hashFiles('requirements_etl.txt') }}
+          key: ${{ runner.os }}-hf-cache-${{ hashFiles('requirements_etl.txt', 'src/nlp_pipeline.py') }}
           restore-keys: |
             ${{ runner.os }}-hf-cache-
 
@@ -35,20 +32,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements_etl.txt
+
       - name: Run ETL Pipeline
         env:
+          HF_HOME: ~/.cache/huggingface
           HF_REPO_ID: ${{ secrets.HF_REPO_ID }}
           HF_WRITE_TOKEN: ${{ secrets.HF_WRITE_TOKEN }}
           SCRAPER_LIMIT_PER_FEED: 10
         run: |
           python src/job_etl.py
-
-      # Automatically keep scheduled workflow active using GitHub REST API
-      - name: Keepalive Workflow via GitHub API
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api -X PUT "/repos/${{ github.repository }}/actions/workflows/daily_pipeline.yml/enable" || true
-
-
-
