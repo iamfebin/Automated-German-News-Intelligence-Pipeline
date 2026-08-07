@@ -2,12 +2,15 @@ name: Daily German News Intelligence Pipeline
 
 on:
   schedule:
-    - cron: '0 6 * * *' # Every day at 6:00 AM UTC
+    - cron: '17 6 * * *' # Every day at 6:17 AM UTC (off-peak to avoid runner queue delays)
   workflow_dispatch: # Allows manual trigger for testing
 
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
     timeout-minutes: 7 # Automatically cancels the job if it hangs past 7 minutes
     steps:
       - name: Checkout Codebase
@@ -33,11 +36,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements_etl.txt
       - name: Run ETL Pipeline
-
         env:
           HF_REPO_ID: ${{ secrets.HF_REPO_ID }}
           HF_WRITE_TOKEN: ${{ secrets.HF_WRITE_TOKEN }}
           SCRAPER_LIMIT_PER_FEED: 10
         run: |
           python src/job_etl.py
+
+      # Automatically keep scheduled workflow active using GitHub REST API
+      - name: Keepalive Workflow via GitHub API
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X PUT "/repos/${{ github.repository }}/actions/workflows/daily_pipeline.yml/enable" || true
+
+
 
