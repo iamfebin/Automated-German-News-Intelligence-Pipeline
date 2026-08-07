@@ -4,57 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multilingual German News Intelligence Platform</title>
+    <!-- Google Fonts: Geist & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22 width=%2232%22 height=%2232%22><text y=%2226%22 font-size=%2228%22>📰</text></svg>">
 </head>
-<body>
+<body class="bg-grid-pattern">
     <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="brand">
-                <span class="logo-emoji">📰</span>
-                <h2>News Intel</h2>
-            </div>
-            
-            <nav class="nav-menu">
-                <button class="nav-btn active" data-tab="search-tab">
-                    <span class="icon">🔍</span> Semantic Search
-                </button>
-                <button class="nav-btn" data-tab="health-tab">
-                    <span class="icon">🩺</span> Ingestion Health
-                </button>
-            </nav>
-
-            <div class="sidebar-divider"></div>
-
-            <!-- Platform Configurations Info -->
-            <div class="sidebar-section">
-                <h3>Platform Config</h3>
-                <div class="info-card">
-                    <p class="info-label">HF Repository</p>
-                    <p id="hf-repo-val" class="info-value">Loading...</p>
+        <!-- Top Navigation Bar -->
+        <header class="top-navbar">
+            <div class="nav-container">
+                <div class="brand">
+                    <span class="logo-emoji">📰</span>
+                    <h2>News Intel</h2>
                 </div>
-                <button id="sync-btn" class="action-btn">
-                    <span class="btn-icon">🔄</span> Sync & Refresh DB
-                </button>
-            </div>
+                
+                <nav class="nav-menu">
+                    <button class="nav-btn active" data-tab="search-tab">
+                        <span class="material-symbols-outlined icon">search</span> Semantic Search
+                    </button>
+                    <button class="nav-btn" data-tab="health-tab">
+                        <span class="material-symbols-outlined icon">analytics</span> Ingestion Health
+                    </button>
+                </nav>
 
-            <!-- Stats Breakdown -->
-            <div class="sidebar-section">
-                <h3>Articles Indexed</h3>
-                <div class="stats-card">
-                    <p class="stats-count" id="total-articles-val">0</p>
-                    <p class="stats-label">Total Articles</p>
+                <div class="navbar-actions">
+                    <button id="sync-btn" class="action-btn">
+                        <span class="material-symbols-outlined btn-icon">sync</span> Sync & Refresh DB
+                    </button>
                 </div>
-                <ul id="source-breakdown-list" class="source-list">
-                    <!-- Dynamic source breakdowns -->
-                </ul>
             </div>
-            
-            <div class="sidebar-footer">
-                <p>Zero-Cost Serverless NLP Architecture</p>
-            </div>
-        </aside>
+        </header>
 
         <!-- Main Content Area -->
         <main class="main-content">
@@ -63,23 +47,41 @@
                 <p class="subtitle">Semantic search and localized intelligence across regional German news feeds (Tagesschau, DW, Spiegel)</p>
             </header>
 
+            <!-- Platform Status & Metrics Banner -->
+            <div class="platform-status-bar">
+                <div class="status-card">
+                    <span class="status-card-label">HF Repository</span>
+                    <span id="hf-repo-val" class="status-card-value">Loading...</span>
+                </div>
+                <div class="status-card">
+                    <span class="status-card-label">Articles Indexed</span>
+                    <span id="total-articles-val" class="status-card-count">0</span>
+                </div>
+                <div class="status-card source-breakdown-card">
+                    <span class="status-card-label">Source Feeds</span>
+                    <ul id="source-breakdown-list" class="source-list">
+                        <!-- Dynamic source breakdowns -->
+                    </ul>
+                </div>
+            </div>
+
             <!-- TAB 1: SEARCH PORTAL -->
             <section id="search-tab" class="tab-content active">
                 <div class="suggestions-container">
                     <div class="suggestion-group">
-                        <span class="suggestion-title">💡 Suggested Searches</span>
+                        <span class="suggestion-title"><span class="material-symbols-outlined text-icon">lightbulb</span> Suggested Searches</span>
                         <div id="suggested-searches-list" class="chip-group">
-                            <button class="chip-btn" data-query="Olaf Scholz">🔍 Olaf Scholz</button>
-                            <button class="chip-btn" data-query="Energiekrise">🔍 Energiekrise</button>
-                            <button class="chip-btn" data-query="Donald Trump">🔍 Donald Trump</button>
-                            <button class="chip-btn" data-query="Ukraine">🔍 Ukraine</button>
-                            <button class="chip-btn" data-query="Israel">🔍 Israel</button>
-                            <button class="chip-btn" data-query="Klimawandel">🔍 Klimawandel</button>
+                            <button class="chip-btn" data-query="Olaf Scholz"><span class="material-symbols-outlined chip-icon">search</span> Olaf Scholz</button>
+                            <button class="chip-btn" data-query="Energiekrise"><span class="material-symbols-outlined chip-icon">search</span> Energiekrise</button>
+                            <button class="chip-btn" data-query="Donald Trump"><span class="material-symbols-outlined chip-icon">search</span> Donald Trump</button>
+                            <button class="chip-btn" data-query="Ukraine"><span class="material-symbols-outlined chip-icon">search</span> Ukraine</button>
+                            <button class="chip-btn" data-query="Israel"><span class="material-symbols-outlined chip-icon">search</span> Israel</button>
+                            <button class="chip-btn" data-query="Klimawandel"><span class="material-symbols-outlined chip-icon">search</span> Klimawandel</button>
                         </div>
                     </div>
 
                     <div class="suggestion-group" id="trending-container" style="display: none;">
-                        <span class="suggestion-title">🔥 Trending Topics</span>
+                        <span class="suggestion-title"><span class="material-symbols-outlined text-icon">local_fire_department</span> Trending Topics</span>
                         <div id="trending-topics-list" class="chip-group">
                             <!-- Populated dynamically via JS -->
                         </div>
@@ -88,6 +90,7 @@
 
                 <div class="search-controls-container">
                     <div class="search-input-wrapper">
+                        <span class="material-symbols-outlined search-input-icon">search</span>
                         <input type="text" id="query-input" placeholder="Type your search in English or German (e.g. 'Energiekrise' or 'Scholz meeting French President')...">
                         <button id="search-submit-btn" class="search-submit-btn">Search</button>
                     </div>
@@ -117,7 +120,7 @@
 
                 <div id="search-results-list" class="search-results-list">
                     <div class="placeholder-state">
-                        <span class="placeholder-icon">🔍</span>
+                        <span class="material-symbols-outlined placeholder-icon">search</span>
                         <p>Enter a query above to explore regional German news articles semantically.</p>
                     </div>
                 </div>
@@ -133,22 +136,42 @@
                 <!-- Drift Metrics Cards -->
                 <div class="metrics-grid">
                     <div class="metric-card">
-                        <span class="metric-label">Embedding PSI</span>
+                        <div class="metric-card-header">
+                            <div class="metric-icon-wrapper">
+                                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">insights</span>
+                            </div>
+                            <span class="metric-label">Embedding PSI</span>
+                        </div>
                         <span id="psi-val" class="metric-value">0.0000</span>
                         <span class="metric-desc">Population Stability Index</span>
                     </div>
                     <div class="metric-card">
-                        <span class="metric-label">Wasserstein Distance</span>
+                        <div class="metric-card-header">
+                            <div class="metric-icon-wrapper">
+                                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">compare_arrows</span>
+                            </div>
+                            <span class="metric-label">Wasserstein Distance</span>
+                        </div>
                         <span id="wasserstein-val" class="metric-value">0.0000</span>
                         <span class="metric-desc">Earth Mover's Distance</span>
                     </div>
                     <div class="metric-card">
-                        <span class="metric-label">Pipeline Status</span>
+                        <div class="metric-card-header">
+                            <div class="metric-icon-wrapper">
+                                <span class="material-symbols-outlined">network_check</span>
+                            </div>
+                            <span class="metric-label">Pipeline Status</span>
+                        </div>
                         <span id="pipeline-status-val" class="metric-value status-normal">Loading...</span>
                         <span class="metric-desc">Semantic Drift Threshold</span>
                     </div>
                     <div class="metric-card">
-                        <span class="metric-label">Sample Breakdown</span>
+                        <div class="metric-card-header">
+                            <div class="metric-icon-wrapper">
+                                <span class="material-symbols-outlined">data_usage</span>
+                            </div>
+                            <span class="metric-label">Sample Breakdown</span>
+                        </div>
                         <span id="sample-breakdown-val" class="metric-value">0 / 0</span>
                         <span class="metric-desc">Validation / Reference Sizes</span>
                     </div>
@@ -160,7 +183,7 @@
 
                 <!-- Detailed Evidently Report iframe -->
                 <div class="report-section">
-                    <h3>Detailed Evidently AI Text Drift Diagnostics</h3>
+                    <h3><span class="material-symbols-outlined section-title-icon">troubleshoot</span> Detailed Evidently AI Text Drift Diagnostics</h3>
                     <div id="report-iframe-container" class="report-iframe-container">
                         <div class="placeholder-report-state">
                             <p>Loading Detailed Text Drift Report...</p>
@@ -169,6 +192,9 @@
                 </div>
             </section>
         </main>
+        <footer class="app-footer">
+            <p>Zero-Cost Serverless NLP Architecture</p>
+        </footer>
     </div>
 
     <!-- Notification Toast -->

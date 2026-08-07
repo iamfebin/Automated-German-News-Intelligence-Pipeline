@@ -2,6 +2,17 @@
 
 A zero-operational-cost, production-grade NLP pipeline and search application designed to ingest, process, embed, index, and monitor German-language news media. It enables English-speaking users to query regional German media semantically in English, returning contextual multilingual summaries, localized Named Entity Recognition (NER), and an automated MLOps data drift dashboard.
 
+## Primary Use Case
+
+This application is designed for anyone who wants to follow German news or research what German media outlets (*Tagesschau*, *Deutsche Welle*, *Der Spiegel*) are reporting on a specific topic without knowing German.
+
+Users can search in **English or German** to instantly retrieve relevant articles, complete with:
+* **English Summaries** for fast cross-lingual reading.
+* **Extracted Entities** (key people, organizations, locations) highlighted in each story.
+* **Direct Links** to the original German news articles.
+
+
+
 ## System Architecture
 
 The platform operates in two main phases:
