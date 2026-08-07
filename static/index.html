@@ -26,7 +26,7 @@
             <div class="nav-container">
                 <div class="brand">
                     <span class="logo-emoji">📰</span>
-                    <h2>News Intel</h2>
+                    <h2>NewsGazer-DE</h2>
                 </div>
 
                 <nav class="nav-menu">
@@ -220,13 +220,46 @@
 
                 <div class="divider"></div>
 
-                <!-- Detailed Evidently Report iframe -->
-                <div class="report-section">
-                    <h3><span class="material-symbols-outlined section-title-icon">troubleshoot</span> Detailed
-                        Evidently AI Text Drift Diagnostics</h3>
-                    <div id="report-iframe-container" class="report-iframe-container">
-                        <div class="placeholder-report-state">
-                            <p>Loading Detailed Text Drift Report...</p>
+                <!-- Native Evidently AI Text Drift Diagnostics Dashboard -->
+                <div class="report-section" id="report-section">
+                    <div class="report-header">
+                        <h3><span class="material-symbols-outlined section-title-icon">analytics</span> Evidently AI
+                            Text Drift Diagnostics</h3>
+                        <div class="report-header-toolbar">
+                            <button id="report-refresh-btn" class="report-action-btn" title="Refresh Diagnostics">
+                                <span class="material-symbols-outlined">refresh</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Native Text Property Drift Table -->
+                    <div class="native-dashboard-card">
+                        <h4 class="card-subtitle"><span class="material-symbols-outlined">table_chart</span> Text Descriptor Shift Summary</h4>
+                        <div class="table-responsive">
+                            <table class="drift-table">
+                                <thead>
+                                    <tr>
+                                        <th>Metric Name</th>
+                                        <th>Baseline (Ref Mean)</th>
+                                        <th>Validation (Cur Mean)</th>
+                                        <th>Wasserstein Shift</th>
+                                        <th>Drift Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="drift-table-body">
+                                    <tr>
+                                        <td colspan="5" class="table-loading-text">Loading drift metrics...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Visual Distribution Bins Grid -->
+                    <div class="native-dashboard-card" style="margin-top: 20px;">
+                        <h4 class="card-subtitle"><span class="material-symbols-outlined">bar_chart</span> Feature Distribution Bins (Baseline vs Validation)</h4>
+                        <div id="distribution-cards-grid" class="dist-grid">
+                            <div class="table-loading-text">Loading feature distributions...</div>
                         </div>
                     </div>
                 </div>

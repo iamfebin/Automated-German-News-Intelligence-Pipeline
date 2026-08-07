@@ -4,20 +4,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchBtn = document.getElementById("search-submit-btn");
     const searchResults = document.getElementById("search-results-list");
     const resultsStatus = document.getElementById("results-status");
-    
+
     const topKSlider = document.getElementById("top-k-slider");
     const topKVal = document.getElementById("top-k-val");
     const thresholdSlider = document.getElementById("threshold-slider");
     const thresholdVal = document.getElementById("threshold-val");
-    
+
     const syncBtn = document.getElementById("sync-btn");
     const toast = document.getElementById("toast");
-    
+
     // Sidebar Status elements
     const hfRepoVal = document.getElementById("hf-repo-val");
     const totalArticlesVal = document.getElementById("total-articles-val");
     const sourceBreakdownList = document.getElementById("source-breakdown-list");
-    
+
     // Health metrics elements
     const psiVal = document.getElementById("psi-val");
     const wassersteinVal = document.getElementById("wasserstein-val");
@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (themeIcon) {
                 themeIcon.textContent = isLight ? "dark_mode" : "light_mode";
             }
+            syncIframeTheme();
         });
     }
 
@@ -119,19 +120,19 @@ document.addEventListener("DOMContentLoaded", () => {
     navButtons.forEach(button => {
         button.addEventListener("click", () => {
             const targetTabId = button.getAttribute("data-tab");
-            
+
             // Toggle nav buttons active class
             navButtons.forEach(btn => btn.classList.remove("active"));
             button.classList.add("active");
-            
+
             // Toggle tab contents active class
             tabContents.forEach(tab => tab.classList.remove("active"));
             const targetTab = document.getElementById(targetTabId);
             targetTab.classList.add("active");
-            
+
             // Special initialization on entering health tab
-            if (targetTabId === "health-tab" && !driftReportLoaded) {
-                loadDriftReportIframe();
+            if (targetTabId === "health-tab") {
+                fetchPlatformStatus();
             }
         });
     });
@@ -171,10 +172,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const response = await fetch("/api/trending");
             if (!response.ok) return;
             const data = await response.json();
-            
+
             const trendingContainer = document.getElementById("trending-container");
             const trendingList = document.getElementById("trending-topics-list");
-            
+
             if (data.trending && data.trending.length > 0) {
                 trendingList.innerHTML = "";
                 data.trending.forEach(item => {
@@ -200,11 +201,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const response = await fetch("/api/status");
             if (!response.ok) throw new Error("Failed to fetch status");
             const data = await response.json();
-            
+
             // Update Sidebar values
             hfRepoVal.textContent = data.hf_repo_id;
             totalArticlesVal.textContent = data.article_count;
-            
+
             // Render source counts
             sourceBreakdownList.innerHTML = "";
             Object.entries(data.source_breakdown).forEach(([source, count]) => {
@@ -213,26 +214,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 sourceBreakdownList.appendChild(li);
             });
 
-            // Update Health tab metrics if loaded
-            if (data.drift_metrics && data.drift_metrics.embedding_drift) {
-                const drift = data.drift_metrics.embedding_drift;
-                psiVal.textContent = parseFloat(drift.population_stability_index).toFixed(4);
-                wassersteinVal.textContent = parseFloat(drift.wasserstein_distance).toFixed(4);
-                
-                pipelineStatusVal.textContent = drift.status || "Unknown";
-                pipelineStatusVal.className = "metric-value";
-                if (drift.status === "Significant Drift") {
-                    pipelineStatusVal.classList.add("status-drift");
-                } else if (drift.status === "Moderate Drift") {
-                    pipelineStatusVal.classList.add("status-moderate");
-                } else if (drift.status === "Insufficient Baseline Data") {
-                    pipelineStatusVal.classList.add("status-insufficient");
-                } else {
-                    pipelineStatusVal.classList.add("status-normal");
-                }
-
-                sampleBreakdownVal.textContent = `${data.drift_metrics.current_count || 0} / ${data.drift_metrics.reference_count || 0}`;
-                driftTimestampVal.textContent = `Drift report last updated: ${data.drift_metrics.timestamp || "Unknown"}`;
+            // Render native text drift dashboard
+            if (data.drift_metrics) {
+                renderNativeDriftDashboard(data.drift_metrics);
             }
         } catch (error) {
             console.error("Error loading status:", error);
@@ -240,10 +224,87 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 5. Load Drift Report Iframe
-    function loadDriftReportIframe() {
-        iframeContainer.innerHTML = '<iframe src="/data/drift_report.html" style="width:100%; height:800px; border:none; border-radius:12px; background-color:#111827;"></iframe>';
-        driftReportLoaded = true;
+    // Render Native Evidently AI Text Drift Diagnostics Dashboard
+    function renderNativeDriftDashboard(driftMetrics) {
+        const tableBody = document.getElementById("drift-table-body");
+        const distGrid = document.getElementById("distribution-cards-grid");
+
+        if (!driftMetrics || !driftMetrics.text_drift_details || driftMetrics.text_drift_details.length === 0) {
+            if (tableBody) tableBody.innerHTML = '<tr><td colspan="5" class="table-loading-text">No text drift data available</td></tr>';
+            if (distGrid) distGrid.innerHTML = '<div class="table-loading-text">No distribution data available</div>';
+            return;
+        }
+
+        const details = driftMetrics.text_drift_details;
+
+        // 1. Render Table Rows
+        if (tableBody) {
+            tableBody.innerHTML = "";
+            details.forEach(item => {
+                const tr = document.createElement("tr");
+                const badgeClass = item.drift_detected ? "badge-drifted" : "badge-stable";
+                const statusText = item.drift_detected ? "Drift Detected" : "Stable";
+
+                tr.innerHTML = `
+                    <td style="font-weight: 600;">${item.name}</td>
+                    <td>${item.ref_mean} <span style="font-size:0.75rem; color:var(--text-muted);">${item.unit}</span></td>
+                    <td>${item.cur_mean} <span style="font-size:0.75rem; color:var(--text-muted);">${item.unit}</span></td>
+                    <td><strong>${item.drift_score}</strong></td>
+                    <td><span class="drift-badge ${badgeClass}">${statusText}</span></td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // 2. Render Distribution Bins Cards
+        if (distGrid) {
+            distGrid.innerHTML = "";
+            details.forEach(item => {
+                if (!item.histogram || item.histogram.length === 0) return;
+
+                const card = document.createElement("div");
+                card.className = "dist-card";
+
+                let barsHtml = "";
+                item.histogram.forEach(b => {
+                    barsHtml += `
+                        <div class="dist-bar-item">
+                            <div class="dist-bar-label">
+                                <span>${b.bin}</span>
+                                <span>Ref ${b.ref_pct}% / Val ${b.cur_pct}%</span>
+                            </div>
+                            <div class="dist-bar-tracks">
+                                <div class="dist-track"><div class="dist-fill-ref" style="width: ${Math.min(b.ref_pct, 100)}%;"></div></div>
+                                <div class="dist-track"><div class="dist-fill-cur" style="width: ${Math.min(b.cur_pct, 100)}%;"></div></div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="dist-card-header">
+                        <span class="dist-card-title">${item.name} (${item.unit})</span>
+                        <div class="dist-legend">
+                            <span class="legend-item"><span class="legend-dot dot-ref"></span> Ref</span>
+                            <span class="legend-item"><span class="legend-dot dot-cur"></span> Val</span>
+                        </div>
+                    </div>
+                    <div class="dist-bar-list">
+                        ${barsHtml}
+                    </div>
+                `;
+                distGrid.appendChild(card);
+            });
+        }
+    }
+
+    // Diagnostics Refresh Button
+    const reportRefreshBtn = document.getElementById("report-refresh-btn");
+    if (reportRefreshBtn) {
+        reportRefreshBtn.addEventListener("click", () => {
+            showToast("Refreshing data drift status...", "info");
+            fetchPlatformStatus();
+        });
     }
 
 
@@ -300,9 +361,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     item.entities.forEach(ent => {
                         const word = ent.word.trim();
                         const etype = ent.entity.toUpperCase();
-                        
+
                         if (word.length <= 1) return;
-                        
+
                         const category_map = {
                             "LOC": "Location",
                             "PER": "Person",
@@ -311,7 +372,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             "PERDERIV": "Person Derivative"
                         };
                         const expanded = category_map[etype] || etype;
-                        
+
                         if (!grouped[expanded]) grouped[expanded] = new Set();
                         grouped[expanded].add(word);
                     });
@@ -325,7 +386,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             } else if (category === "Location" || category === "Location Derivative") {
                                 bClass = "badge-loc";
                             }
-                            
+
                             const badges = Array.from(words).sort().map(w => `<span class="badge ${bClass}">${w}</span>`).join(" ");
                             tagsHtml += `
                                 <div class="tag-category-group">
@@ -353,7 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     <!-- Collapsible tags expander -->
                     <details>
-                        <summary>Show Tags</summary>
+                        <summary>Show NER Tags</summary>
                         <div class="details-content">
                             ${tagsHtml}
                         </div>
@@ -392,7 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const response = await fetch("/api/sync", { method: "POST" });
             if (!response.ok) throw new Error("Sync failed");
             const data = await response.json();
-            
+
             showToast(`Sync complete! Database now contains ${data.article_count} articles.`, "success");
             await fetchPlatformStatus();
             await fetchTrendingTopics();
@@ -409,7 +470,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function showToast(message, type = "success") {
         toast.textContent = message;
         toast.className = `toast show ${type}`;
-        
+
         setTimeout(() => {
             toast.classList.remove("show");
         }, 4000);

@@ -238,6 +238,192 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
     elif mean_psi > 0.1:
         status = "Moderate Drift"
         
+def compute_text_drift_details(reference_df: pd.DataFrame, current_df: pd.DataFrame) -> list:
+    """
+    Computes detailed text descriptor metrics (Text Length, Word Count, Non-Letter Ratio, Special Chars/OOV Ratio)
+    along with Wasserstein drift scores and 5-bin comparison histograms for native JSON serialization.
+    """
+    text_details = []
+    
+    def build_histogram(ref_vals, cur_vals, bins=5):
+        try:
+            combined = np.concatenate([ref_vals, cur_vals])
+            min_v, max_v = float(np.min(combined)), float(np.max(combined))
+            if min_v == max_v:
+                max_v += 1.0
+            bin_edges = np.linspace(min_v, max_v, bins + 1)
+            
+            ref_counts, _ = np.histogram(ref_vals, bins=bin_edges)
+            cur_counts, _ = np.histogram(cur_vals, bins=bin_edges)
+            
+            ref_total = len(ref_vals) if len(ref_vals) > 0 else 1
+            cur_total = len(cur_vals) if len(cur_vals) > 0 else 1
+            
+            ref_pcts = (ref_counts / ref_total * 100.0).round(1).tolist()
+            cur_pcts = (cur_counts / cur_total * 100.0).round(1).tolist()
+            
+            labels = []
+            for i in range(bins):
+                low, high = bin_edges[i], bin_edges[i+1]
+                if max_v > 10:
+                    labels.append(f"{int(round(low))}-{int(round(high))}")
+                else:
+                    labels.append(f"{low:.2f}-{high:.2f}")
+                    
+            return [
+                {"bin": labels[i], "ref_pct": ref_pcts[i], "cur_pct": cur_pcts[i]}
+                for i in range(bins)
+            ]
+        except Exception as e:
+            logger.error(f"Error building histogram: {e}")
+            return []
+
+    def get_descriptor(df, col_name, func):
+        if col_name not in df.columns or df[col_name].empty:
+            return np.array([0.0])
+        return np.array([func(str(x)) for x in df[col_name].fillna("")])
+
+    # 1. Text Length (Characters)
+    ref_len = get_descriptor(reference_df, "body_de", len)
+    cur_len = get_descriptor(current_df, "body_de", len)
+    wd_len = float(wasserstein_distance(ref_len, cur_len))
+    text_details.append({
+        "name": "Text Length",
+        "unit": "chars",
+        "ref_mean": round(float(np.mean(ref_len)), 1),
+        "cur_mean": round(float(np.mean(cur_len)), 1),
+        "drift_score": round(wd_len, 4),
+        "drift_detected": wd_len > 150.0,
+        "histogram": build_histogram(ref_len, cur_len)
+    })
+
+    # 2. Word Count
+    word_count_fn = lambda t: len(t.split())
+    ref_wc = get_descriptor(reference_df, "body_de", word_count_fn)
+    cur_wc = get_descriptor(current_df, "body_de", word_count_fn)
+    wd_wc = float(wasserstein_distance(ref_wc, cur_wc))
+    text_details.append({
+        "name": "Word Count",
+        "unit": "words",
+        "ref_mean": round(float(np.mean(ref_wc)), 1),
+        "cur_mean": round(float(np.mean(cur_wc)), 1),
+        "drift_score": round(wd_wc, 4),
+        "drift_detected": wd_wc > 25.0,
+        "histogram": build_histogram(ref_wc, cur_wc)
+    })
+
+    # 3. Non-Letter Character Ratio
+    non_letter_fn = lambda t: sum(1 for c in t if not c.isalpha()) / max(len(t), 1)
+    ref_nl = get_descriptor(reference_df, "body_de", non_letter_fn)
+    cur_nl = get_descriptor(current_df, "body_de", non_letter_fn)
+    wd_nl = float(wasserstein_distance(ref_nl, cur_nl))
+    text_details.append({
+        "name": "Non-Letter Ratio",
+        "unit": "ratio",
+        "ref_mean": round(float(np.mean(ref_nl)), 4),
+        "cur_mean": round(float(np.mean(cur_nl)), 4),
+        "drift_score": round(wd_nl, 4),
+        "drift_detected": wd_nl > 0.05,
+        "histogram": build_histogram(ref_nl, cur_nl)
+    })
+
+    # 4. Out-of-Vocabulary / Special Chars Ratio
+    oov_fn = lambda t: sum(1 for c in t if not c.isalnum() and not c.isspace()) / max(len(t), 1)
+    ref_oov = get_descriptor(reference_df, "body_de", oov_fn)
+    cur_oov = get_descriptor(current_df, "body_de", oov_fn)
+    wd_oov = float(wasserstein_distance(ref_oov, cur_oov))
+    text_details.append({
+        "name": "Special Chars / OOV Ratio",
+        "unit": "ratio",
+        "ref_mean": round(float(np.mean(ref_oov)), 4),
+        "cur_mean": round(float(np.mean(cur_oov)), 4),
+        "drift_score": round(wd_oov, 4),
+        "drift_detected": wd_oov > 0.03,
+        "histogram": build_histogram(ref_oov, cur_oov)
+    })
+
+    return text_details
+
+def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
+    """
+    Compares newly scraped articles (current) against historical baseline (reference).
+    Generates structured Evidently AI text drift JSON metrics for native website rendering.
+    """
+    metadata_path = os.path.join(DATA_DIR, METADATA_FILENAME)
+    metrics_path = os.path.join(DATA_DIR, DRIFT_METRICS_FILENAME)
+    
+    if not os.path.exists(metadata_path):
+        logger.warning(f"Metadata file {metadata_path} not found. Cannot generate drift report.")
+        return {}
+        
+    df = pd.read_parquet(metadata_path)
+    if len(df) == 0:
+        logger.warning("Metadata Parquet is empty. Cannot generate drift report.")
+        return {}
+        
+    # Split reference vs current
+    if "timestamp" in df.columns:
+        df["timestamp_dt"] = pd.to_datetime(df["timestamp"])
+    else:
+        df["timestamp_dt"] = pd.to_datetime("now")
+        
+    latest_date = df["timestamp_dt"].max()
+    day_cutoff = latest_date - timedelta(days=1)
+    current_df = df[df["timestamp_dt"] >= day_cutoff].copy()
+    reference_df = df[df["timestamp_dt"] < day_cutoff].copy()
+    
+    if len(current_df) < 3 or len(reference_df) < 3:
+        df_sorted = df.sort_values("timestamp_dt")
+        split_idx = int(len(df_sorted) * 0.7)
+        reference_df = df_sorted.iloc[:split_idx].copy()
+        current_df = df_sorted.iloc[split_idx:].copy()
+        
+    if len(reference_df) < 2 or len(current_df) < 2:
+        logger.warning("Total dataset is too small (<5 articles) to perform split drift analysis.")
+        reference_df = df.copy()
+        current_df = df.copy()
+    
+    logger.info(f"Running drift analysis. Reference size: {len(reference_df)}, Current size: {len(current_df)}")
+    
+    # 1. Compute custom embedding drift
+    mean_wd = 0.0
+    mean_psi = 0.0
+    
+    if "embedding" in df.columns:
+        try:
+            ref_embeddings = np.stack(reference_df["embedding"].values).astype('float32')
+            cur_embeddings = np.stack(current_df["embedding"].values).astype('float32')
+            mean_wd, mean_psi = compute_embedding_drift(ref_embeddings, cur_embeddings)
+            logger.info(f"Embedding Drift - Mean Wasserstein Distance: {mean_wd:.4f}, Mean PSI: {mean_psi:.4f}")
+        except Exception as e:
+            logger.error(f"Error calculating embedding drift: {e}")
+            
+    status = "Stable"
+    if len(reference_df) < 2 or len(current_df) < 2:
+        status = "Insufficient Baseline Data"
+    elif mean_psi > 0.25:
+        status = "Significant Drift"
+    elif mean_psi > 0.1:
+        status = "Moderate Drift"
+        
+    # 2. Extract Evidently AI Report metrics if available
+    evidently_metrics = {}
+    if EVIDENTLY_AVAILABLE:
+        try:
+            ref_texts = reference_df[["body_de"]].rename(columns={"body_de": "German News Text"}).copy()
+            cur_texts = current_df[["body_de"]].rename(columns={"body_de": "German News Text"}).copy()
+            report = Report(metrics=[TextEvals(column_name="German News Text")])
+            logger.info("Running Evidently AI text drift metrics...")
+            report.run(current_data=cur_texts, reference_data=ref_texts)
+            evidently_dict = report.as_dict()
+            evidently_metrics = evidently_dict.get("metrics", [])
+            logger.info("Successfully extracted raw metrics from Evidently AI report.")
+        except Exception as e:
+            logger.error(f"Evidently AI metric extraction failed: {e}")
+
+    # Compute text property details (length, word count, non-letter, special chars)
+    text_drift_details = compute_text_drift_details(reference_df, current_df)
+        
     metrics = {
         "timestamp": datetime.utcnow().isoformat(),
         "reference_count": len(reference_df),
@@ -247,167 +433,13 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
             "population_stability_index": mean_psi,
             "status": status
         },
-        "evidently_report_generated": False
+        "evidently_available": EVIDENTLY_AVAILABLE,
+        "text_drift_details": text_drift_details
     }
-    
-    # 2. Generate Evidently AI HTML Report
-    if EVIDENTLY_AVAILABLE:
-        try:
-            # Rename column for clean display labels in Evidently report
-            ref_texts = reference_df[["body_de"]].rename(columns={"body_de": "German News Text"}).copy()
-            cur_texts = current_df[["body_de"]].rename(columns={"body_de": "German News Text"}).copy()
-            
-            report = Report(metrics=[
-                TextEvals(column_name="German News Text")
-            ])
-            
-            logger.info("Running Evidently AI text drift metrics...")
-            report.run(current_data=cur_texts, reference_data=ref_texts)
-            # Save self-contained HTML report with inline JS so iframe executes Plotly/Evidently scripts
-            report.save_html(report_path)
-
-            metrics["evidently_report_generated"] = True
-            logger.info(f"Evidently AI self-contained HTML report saved to {report_path}")
-        except Exception as e:
-            logger.error(f"Failed to generate Evidently AI report: {e}")
-    else:
-        logger.warning("Evidently AI is not available. Skipping HTML report generation.")
-        # Create a modern, dark-themed fallback HTML report for FastAPI web interface
-        try:
-            os.makedirs(DATA_DIR, exist_ok=True)
-            badge_class = (
-                "badge-significant" if status == "Significant Drift"
-                else "badge-moderate" if status == "Moderate Drift"
-                else "badge-insufficient" if status == "Insufficient Baseline Data"
-                else "badge-stable"
-            )
-            with open(report_path, "w", encoding="utf-8") as f:
-                f.write(f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MLOps Data Drift Diagnostics</title>
-    <style>
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
-            margin: 0;
-            padding: 32px 16px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 80vh;
-        }}
-        .card {{
-            background: #111827;
-            border: 1px solid #1f2937;
-            border-radius: 16px;
-            padding: 36px;
-            max-width: 650px;
-            width: 100%;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            text-align: center;
-        }}
-        .title {{
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #60a5fa;
-            margin-top: 0;
-            margin-bottom: 8px;
-        }}
-        .subtitle {{
-            font-size: 0.9rem;
-            color: #9ca3af;
-            margin-bottom: 24px;
-        }}
-        .badge {{
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 9999px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 24px;
-        }}
-        .badge-stable {{ background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }}
-        .badge-moderate {{ background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }}
-        .badge-significant {{ background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }}
-        .badge-insufficient {{ background: rgba(107, 114, 128, 0.15); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.3); }}
-        .grid {{
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-top: 16px;
-        }}
-        .metric-box {{
-            background: #1f2937;
-            border: 1px solid #374151;
-            border-radius: 12px;
-            padding: 16px;
-        }}
-        .metric-label {{
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #9ca3af;
-            margin-bottom: 6px;
-        }}
-        .metric-value {{
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #38bdf8;
-        }}
-        .notice {{
-            font-size: 0.85rem;
-            color: #9ca3af;
-            background: rgba(31, 41, 55, 0.6);
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 24px;
-            border-left: 3px solid #3b82f6;
-            text-align: left;
-        }}
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h2 class="title">MLOps Data Drift Diagnostics</h2>
-        <div class="subtitle">Vector Distribution & Statistical Metrics</div>
-        <div class="badge {badge_class}">Pipeline Status: {status}</div>
         
-        <div class="grid">
-            <div class="metric-box">
-                <div class="metric-label">Population Stability Index</div>
-                <div class="metric-value">{mean_psi:.4f}</div>
-            </div>
-            <div class="metric-box">
-                <div class="metric-label">Wasserstein Distance</div>
-                <div class="metric-value">{mean_wd:.4f}</div>
-            </div>
-            <div class="metric-box">
-                <div class="metric-label">Current Validation Sample</div>
-                <div class="metric-value">{len(current_df)}</div>
-            </div>
-            <div class="metric-box">
-                <div class="metric-label">Reference Baseline Sample</div>
-                <div class="metric-value">{len(reference_df)}</div>
-            </div>
-        </div>
-
-        <div class="notice">
-            <strong>Diagnostic Info:</strong> Evidently AI text drift report is operating in mathematical fallback mode. High-dimensional vector embedding drift (PSI & Earth Mover's Distance) was computed successfully across all 384 feature coordinates.
-        </div>
-    </div>
-</body>
-</html>""")
-            metrics["evidently_report_generated"] = True
-            logger.info(f"Created placeholder HTML report at {report_path}")
-        except Exception as e:
-            logger.error(f"Could not create placeholder HTML: {e}")
-            
     # Save metrics JSON
     try:
+        os.makedirs(DATA_DIR, exist_ok=True)
         with open(metrics_path, "w", encoding="utf-8") as f:
             json.dump(metrics, f, indent=2)
         logger.info(f"Saved drift metrics JSON to {metrics_path}")
