@@ -17,23 +17,11 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Push to Hugging Face
-        env:
-          HF_TOKEN: ${{ secrets.HF_WRITE_TOKEN || secrets.HF_TOKEN }}
-        run: |
-          if [ -z "$HF_TOKEN" ]; then
-            echo "::error::Neither secrets.HF_WRITE_TOKEN nor secrets.HF_TOKEN is defined in GitHub repository secrets!"
-            echo "Please go to Settings > Secrets and variables > Actions in your GitHub repo and set HF_WRITE_TOKEN or HF_TOKEN with your Hugging Face write token."
-            exit 1
-          fi
-
-          # Prepend Hugging Face metadata header to README.md for HF deployment
-          HEADER="---\ntitle: Multilingual German News Intelligence\nemoji: 📰\ncolorFrom: blue\ncolorTo: green\nsdk: docker\napp_port: 7860\npinned: false\n---\n\n"
-          printf "$HEADER" | cat - README.md > README.md.tmp && mv README.md.tmp README.md
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -am "Add Hugging Face Space metadata header" || true
-
-          git remote add space https://x:$HF_TOKEN@huggingface.co/spaces/iamfebin/automated-german-news-pipeline
-          git push --force space HEAD:main
+      - name: Sync to Hugging Face Spaces
+        uses: JacobLinCool/huggingface-sync@v1
+        with:
+          github: ${{ secrets.GITHUB_TOKEN }}
+          user: iamfebin
+          space: automated-german-news-pipeline
+          token: ${{ secrets.HF_WRITE_TOKEN || secrets.HF_TOKEN }}
+          configuration: "README.md.yml"
