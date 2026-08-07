@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,13 +8,18 @@
     <!-- Google Fonts: Geist & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <!-- Material Symbols -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22 width=%2232%22 height=%2232%22><text y=%2226%22 font-size=%2228%22>📰</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22 width=%2232%22 height=%2232%22><text y=%2226%22 font-size=%2228%22>📰</text></svg>">
 </head>
-<body class="bg-grid-pattern">
+
+<body class="bg-grid-pattern light-theme">
     <div class="app-container">
         <!-- Top Navigation Bar -->
         <header class="top-navbar">
@@ -22,7 +28,7 @@
                     <span class="logo-emoji">📰</span>
                     <h2>News Intel</h2>
                 </div>
-                
+
                 <nav class="nav-menu">
                     <button class="nav-btn active" data-tab="search-tab">
                         <span class="material-symbols-outlined icon">search</span> Semantic Search
@@ -33,21 +39,26 @@
                 </nav>
 
                 <div class="navbar-actions">
-                    <button id="sync-btn" class="action-btn">
-                        <span class="material-symbols-outlined btn-icon">sync</span> Sync & Refresh DB
+                    <button id="stats-toggle-btn" class="nav-icon-btn stats-btn"
+                        title="Platform Config & Article Stats">
+                        <span class="material-symbols-outlined icon">info</span>
+                        <span class="stats-btn-text">Platform Config</span>
+                    </button>
+
+                    <button id="theme-toggle-btn" class="nav-icon-btn theme-btn" title="Toggle Light / Dark Mode">
+                        <span class="material-symbols-outlined theme-icon" id="theme-icon">dark_mode</span>
                     </button>
                 </div>
             </div>
         </header>
 
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <header class="app-header">
-                <h1 class="main-title">Multilingual German News Intelligence</h1>
-                <p class="subtitle">Semantic search and localized intelligence across regional German news feeds (Tagesschau, DW, Spiegel)</p>
-            </header>
-
-            <!-- Platform Status & Metrics Banner -->
+        <!-- Floating Platform Stats Popover -->
+        <div id="stats-popover" class="floating-stats-popover">
+            <div class="popover-header">
+                <span class="popover-title"><span class="material-symbols-outlined text-icon">tune</span> Platform
+                    Configuration & Status</span>
+                <button id="stats-close-btn" class="popover-close-btn">&times;</button>
+            </div>
             <div class="platform-status-bar">
                 <div class="status-card">
                     <span class="status-card-label">HF Repository</span>
@@ -64,24 +75,47 @@
                     </ul>
                 </div>
             </div>
+            <div class="popover-footer">
+                <button id="sync-btn" class="action-btn w-full">
+                    <span class="material-symbols-outlined btn-icon">sync</span> Sync & Refresh DB
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="app-header">
+                <h1 class="main-title">Multilingual German News Intelligence</h1>
+                <p class="subtitle">Semantic search and localized intelligence across regional German news feeds
+                    (Tagesschau, DW, Spiegel)</p>
+            </header>
 
             <!-- TAB 1: SEARCH PORTAL -->
             <section id="search-tab" class="tab-content active">
                 <div class="suggestions-container">
                     <div class="suggestion-group">
-                        <span class="suggestion-title"><span class="material-symbols-outlined text-icon">lightbulb</span> Suggested Searches</span>
+                        <span class="suggestion-title"><span
+                                class="material-symbols-outlined text-icon">lightbulb</span> Suggested Searches</span>
                         <div id="suggested-searches-list" class="chip-group">
-                            <button class="chip-btn" data-query="Olaf Scholz"><span class="material-symbols-outlined chip-icon">search</span> Olaf Scholz</button>
-                            <button class="chip-btn" data-query="Energiekrise"><span class="material-symbols-outlined chip-icon">search</span> Energiekrise</button>
-                            <button class="chip-btn" data-query="Donald Trump"><span class="material-symbols-outlined chip-icon">search</span> Donald Trump</button>
-                            <button class="chip-btn" data-query="Ukraine"><span class="material-symbols-outlined chip-icon">search</span> Ukraine</button>
-                            <button class="chip-btn" data-query="Israel"><span class="material-symbols-outlined chip-icon">search</span> Israel</button>
-                            <button class="chip-btn" data-query="Klimawandel"><span class="material-symbols-outlined chip-icon">search</span> Klimawandel</button>
+                            <button class="chip-btn" data-query="Olaf Scholz"><span
+                                    class="material-symbols-outlined chip-icon">search</span> Olaf Scholz</button>
+                            <button class="chip-btn" data-query="Energiekrise"><span
+                                    class="material-symbols-outlined chip-icon">search</span> Energiekrise</button>
+                            <button class="chip-btn" data-query="Donald Trump"><span
+                                    class="material-symbols-outlined chip-icon">search</span> Donald Trump</button>
+                            <button class="chip-btn" data-query="Ukraine"><span
+                                    class="material-symbols-outlined chip-icon">search</span> Ukraine</button>
+                            <button class="chip-btn" data-query="Israel"><span
+                                    class="material-symbols-outlined chip-icon">search</span> Israel</button>
+                            <button class="chip-btn" data-query="Klimawandel"><span
+                                    class="material-symbols-outlined chip-icon">search</span> Klimawandel</button>
                         </div>
                     </div>
 
                     <div class="suggestion-group" id="trending-container" style="display: none;">
-                        <span class="suggestion-title"><span class="material-symbols-outlined text-icon">local_fire_department</span> Trending Topics</span>
+                        <span class="suggestion-title"><span
+                                class="material-symbols-outlined text-icon">local_fire_department</span> Trending
+                            Topics</span>
                         <div id="trending-topics-list" class="chip-group">
                             <!-- Populated dynamically via JS -->
                         </div>
@@ -91,7 +125,8 @@
                 <div class="search-controls-container">
                     <div class="search-input-wrapper">
                         <span class="material-symbols-outlined search-input-icon">search</span>
-                        <input type="text" id="query-input" placeholder="Type your search in English or German (e.g. 'Energiekrise' or 'Scholz meeting French President')...">
+                        <input type="text" id="query-input"
+                            placeholder="Type your search in English or German (e.g. 'Energiekrise' or 'Scholz meeting French President')...">
                         <button id="search-submit-btn" class="search-submit-btn">Search</button>
                     </div>
 
@@ -130,7 +165,9 @@
             <section id="health-tab" class="tab-content">
                 <div class="health-overview-header">
                     <h2>MLOps Ingestion Pipeline Health & Data Drift Diagnostics</h2>
-                    <p>Linguistic and semantic profile distributions shift as global news topics change. The metrics below display drift comparisons between today's ingestion batch and a rolling reference baseline of the past 14 days.</p>
+                    <p>Linguistic and semantic profile distributions shift as global news topics change. The metrics
+                        below display drift comparisons between today's ingestion batch and a rolling reference baseline
+                        of the past 14 days.</p>
                 </div>
 
                 <!-- Drift Metrics Cards -->
@@ -138,7 +175,8 @@
                     <div class="metric-card">
                         <div class="metric-card-header">
                             <div class="metric-icon-wrapper">
-                                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">insights</span>
+                                <span class="material-symbols-outlined"
+                                    style="font-variation-settings: 'FILL' 1;">insights</span>
                             </div>
                             <span class="metric-label">Embedding PSI</span>
                         </div>
@@ -148,7 +186,8 @@
                     <div class="metric-card">
                         <div class="metric-card-header">
                             <div class="metric-icon-wrapper">
-                                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">compare_arrows</span>
+                                <span class="material-symbols-outlined"
+                                    style="font-variation-settings: 'FILL' 1;">compare_arrows</span>
                             </div>
                             <span class="metric-label">Wasserstein Distance</span>
                         </div>
@@ -176,14 +215,15 @@
                         <span class="metric-desc">Validation / Reference Sizes</span>
                     </div>
                 </div>
-                
+
                 <p id="drift-timestamp-val" class="timestamp-info">Drift report last updated: Unknown</p>
 
                 <div class="divider"></div>
 
                 <!-- Detailed Evidently Report iframe -->
                 <div class="report-section">
-                    <h3><span class="material-symbols-outlined section-title-icon">troubleshoot</span> Detailed Evidently AI Text Drift Diagnostics</h3>
+                    <h3><span class="material-symbols-outlined section-title-icon">troubleshoot</span> Detailed
+                        Evidently AI Text Drift Diagnostics</h3>
                     <div id="report-iframe-container" class="report-iframe-container">
                         <div class="placeholder-report-state">
                             <p>Loading Detailed Text Drift Report...</p>
@@ -202,4 +242,5 @@
 
     <script src="/static/app.js"></script>
 </body>
+
 </html>

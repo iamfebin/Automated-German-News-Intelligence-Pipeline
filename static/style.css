@@ -23,6 +23,78 @@
     --font-mono: 'JetBrains Mono', monospace;
 }
 
+/* Light Theme (E-Ink Mode) */
+body.light-theme {
+    --bg-main: #f5f5f5;
+    --bg-navbar: rgba(245, 245, 245, 0.88);
+    --bg-card: #ffffff;
+    --bg-card-inner: #fafafa;
+    --border-color: #e5e5e5;
+    --border-hover: #d4d4d4;
+    
+    --text-primary: #121212;
+    --text-secondary: #474747;
+    --text-muted: #656565;
+    
+    --primary-color: #000000;
+    --on-primary: #ffffff;
+
+    --success-color: #059669;
+    --warning-color: #d97706;
+    --danger-color: #dc2626;
+}
+
+body.light-theme,
+body.light-theme.bg-grid-pattern {
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+body.light-theme .brand h2,
+body.light-theme .main-title,
+body.light-theme .health-overview-header h2,
+body.light-theme .report-section h3,
+body.light-theme .news-title,
+body.light-theme .status-card-count,
+body.light-theme .metric-value,
+body.light-theme .news-url-link,
+body.light-theme .slider-badge {
+    color: #121212;
+}
+
+body.light-theme .action-btn,
+body.light-theme .search-submit-btn {
+    background: #000000;
+    color: #ffffff;
+    border-color: #000000;
+}
+
+body.light-theme .action-btn:hover,
+body.light-theme .search-submit-btn:hover {
+    background: #2a2a2a;
+    border-color: #2a2a2a;
+}
+
+body.light-theme .nav-btn.active {
+    background-color: #e5e5e5;
+    color: #121212;
+    border-color: #d4d4d4;
+}
+
+body.light-theme .metric-icon-wrapper {
+    background: #f5f5f5;
+    color: #121212;
+}
+
+body.light-theme .search-input-wrapper:focus-within {
+    border-color: #121212;
+}
+
+body.light-theme .slider-control input[type="range"] {
+    accent-color: #000000;
+}
+
 /* Reset & Global styles */
 * {
     margin: 0;
@@ -137,6 +209,108 @@ body {
 .navbar-actions {
     display: flex;
     align-items: center;
+    gap: 10px;
+}
+
+.nav-icon-btn {
+    background: var(--bg-card-inner);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-family: var(--font-geist);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.nav-icon-btn:hover {
+    background-color: var(--bg-card);
+    border-color: var(--border-hover);
+}
+
+.floating-stats-popover {
+    position: fixed;
+    top: 70px;
+    right: 24px;
+    z-index: 200;
+    width: 460px;
+    max-width: calc(100vw - 32px);
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-stats-popover.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.popover-title {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.popover-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.popover-close-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.floating-stats-popover .platform-status-bar {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.floating-stats-popover .source-breakdown-card {
+    grid-column: 1 / -1;
+}
+
+.popover-footer {
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.w-full {
+    width: 100%;
 }
 
 .action-btn {

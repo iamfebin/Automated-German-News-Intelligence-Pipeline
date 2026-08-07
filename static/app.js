@@ -29,6 +29,89 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize state
     let driftReportLoaded = false;
 
+    // Theme Toggle Logic (Default: Light Mode)
+    const themeToggleBtn = document.getElementById("theme-toggle-btn");
+    const themeIcon = document.getElementById("theme-icon");
+
+    const savedTheme = localStorage.getItem("news-intel-theme");
+    if (savedTheme === "dark") {
+        document.body.classList.remove("light-theme");
+        if (themeIcon) themeIcon.textContent = "light_mode";
+    } else {
+        document.body.classList.add("light-theme");
+        if (themeIcon) themeIcon.textContent = "dark_mode";
+    }
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener("click", () => {
+            document.body.classList.toggle("light-theme");
+            const isLight = document.body.classList.contains("light-theme");
+            localStorage.setItem("news-intel-theme", isLight ? "light" : "dark");
+            if (themeIcon) {
+                themeIcon.textContent = isLight ? "dark_mode" : "light_mode";
+            }
+        });
+    }
+
+    // Floating Stats Popover Logic with Auto-Close
+    const statsToggleBtn = document.getElementById("stats-toggle-btn");
+    const statsPopover = document.getElementById("stats-popover");
+    const statsCloseBtn = document.getElementById("stats-close-btn");
+    let autoCloseTimer = null;
+
+    function openStatsPopover() {
+        if (!statsPopover) return;
+        statsPopover.classList.add("open");
+        resetAutoCloseTimer();
+    }
+
+    function closeStatsPopover() {
+        if (!statsPopover) return;
+        statsPopover.classList.remove("open");
+        if (autoCloseTimer) {
+            clearTimeout(autoCloseTimer);
+            autoCloseTimer = null;
+        }
+    }
+
+    function resetAutoCloseTimer() {
+        if (autoCloseTimer) clearTimeout(autoCloseTimer);
+        autoCloseTimer = setTimeout(() => {
+            closeStatsPopover();
+        }, 6000);
+    }
+
+    if (statsToggleBtn) {
+        statsToggleBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (statsPopover.classList.contains("open")) {
+                closeStatsPopover();
+            } else {
+                openStatsPopover();
+            }
+        });
+    }
+
+    if (statsCloseBtn) {
+        statsCloseBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            closeStatsPopover();
+        });
+    }
+
+    if (statsPopover) {
+        statsPopover.addEventListener("mousemove", resetAutoCloseTimer);
+        statsPopover.addEventListener("click", (e) => e.stopPropagation());
+    }
+
+    document.addEventListener("click", (e) => {
+        if (statsPopover && statsPopover.classList.contains("open")) {
+            if (!statsPopover.contains(e.target) && !statsToggleBtn.contains(e.target)) {
+                closeStatsPopover();
+            }
+        }
+    });
+
     // 1. Tab Switching Logic
     const navButtons = document.querySelectorAll(".nav-btn");
     const tabContents = document.querySelectorAll(".tab-content");
