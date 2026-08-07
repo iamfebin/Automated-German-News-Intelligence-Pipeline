@@ -272,7 +272,7 @@ def generate_drift_report(new_article_ids: list) -> Dict[str, Any]:
             logger.error(f"Failed to generate Evidently AI report: {e}")
     else:
         logger.warning("Evidently AI is not available. Skipping HTML report generation.")
-        # Create a modern, dark-themed fallback HTML report for Streamlit & FastAPI
+        # Create a modern, dark-themed fallback HTML report for FastAPI web interface
         try:
             os.makedirs(DATA_DIR, exist_ok=True)
             badge_class = (

@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements files first to leverage caching
 COPY requirements.txt requirements_etl.txt ./
 
-# Install python dependencies for both Streamlit and ETL pipeline
+# Install python dependencies for both FastAPI application and ETL pipeline
 RUN pip install --no-cache-dir -r requirements.txt -r requirements_etl.txt
 
 # Copy application files
