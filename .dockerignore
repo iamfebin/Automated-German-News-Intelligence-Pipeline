@@ -11,3 +11,4 @@ __pycache__
 data/
 logs-*.txt
 test_download.bin
+design_example
