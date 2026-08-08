@@ -354,7 +354,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Show Loader
-        searchResults.innerHTML = '<div class="loader"></div>';
+        searchResults.innerHTML = `
+            <div class="loading-container">
+                <div class="loader loader-lg"></div>
+                <span class="loading-title">Performing Semantic Search...</span>
+                <span class="loading-subtitle">Computing vector embeddings & scanning article similarities across the news corpus</span>
+            </div>
+        `;
         resultsStatus.innerHTML = "";
 
         const topK = parseInt(topKSlider.value);
@@ -490,7 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 7. Manual Database Sync trigger
     syncBtn.addEventListener("click", async () => {
         syncBtn.disabled = true;
-        syncBtn.innerHTML = '<span class="btn-icon loader" style="width:14px; height:14px; border-width:2px; margin:0; display:inline-block;"></span> Syncing...';
+        syncBtn.innerHTML = '<span class="btn-icon loader loader-sm"></span> Syncing...';
         showToast("Initiating database sync from Hugging Face...", "info");
 
         try {
