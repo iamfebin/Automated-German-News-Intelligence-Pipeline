@@ -33,14 +33,20 @@ class TestPipelineComponents(unittest.TestCase):
     def test_article_id_generation(self):
         logger.info("Running test_article_id_generation...")
         url = "https://www.tagesschau.de/inland/test-article-100.html"
-        pub_date = "2026-06-14T12:00:00"
+        guid = "tagesschau-test-article-100"
         
-        id1 = generate_article_id(url, pub_date)
-        id2 = generate_article_id(url, pub_date)
-        id3 = generate_article_id(url, "2026-06-14T12:00:01")
+        # Test deterministic ID generation
+        id1 = generate_article_id(url, guid)
+        id2 = generate_article_id(url, guid)
+        # Different GUID yields different ID
+        id3 = generate_article_id(url, "tagesschau-test-article-101")
+        # URL normalization works when GUID is empty
+        id4 = generate_article_id(url + "?ref=rss")
+        id5 = generate_article_id(url)
         
         self.assertEqual(id1, id2)
         self.assertNotEqual(id1, id3)
+        self.assertEqual(id4, id5)
         self.assertEqual(len(id1), 64) # SHA-256 length
 
     def test_calculate_psi(self):

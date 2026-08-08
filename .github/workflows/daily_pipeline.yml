@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.12'
           cache: 'pip'
 
       # Cache Hugging Face models to speed up workflows
@@ -38,6 +38,6 @@ jobs:
           HF_HOME: ~/.cache/huggingface
           HF_REPO_ID: ${{ secrets.HF_REPO_ID }}
           HF_WRITE_TOKEN: ${{ secrets.HF_WRITE_TOKEN }}
-          SCRAPER_LIMIT_PER_FEED: 10
+          SCRAPER_LIMIT_PER_FEED: 15
         run: |
           python src/job_etl.py

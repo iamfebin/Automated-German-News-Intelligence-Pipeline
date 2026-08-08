@@ -5,7 +5,7 @@ import re
 import unicodedata
 from datetime import datetime
 import time
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 import feedparser
 import requests
 from bs4 import BeautifulSoup
@@ -16,7 +16,11 @@ logger = logging.getLogger(__name__)
 
 # User-Agent header to avoid blocking
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Cache-Control": "max-age=0",
+    "Upgrade-Insecure-Requests": "1"
 }
 
 RSS_FEEDS = {
@@ -50,12 +54,13 @@ def clean_german_text(text: str) -> str:
     
     return text.strip()
 
-def generate_article_id(url: str, pub_date_str: str) -> str:
+def generate_article_id(url: str, guid: str = "") -> str:
     """
-    Generates a unique SHA-256 hash from URL and publication date.
+    Generates a deterministic unique SHA-256 hash from RSS entry GUID or canonical URL.
+    This guarantees stable IDs across title/timestamp updates.
     """
-    unique_string = f"{url}||{pub_date_str}"
-    return hashlib.sha256(unique_string.encode('utf-8')).hexdigest()
+    identifier = guid.strip() if guid and guid.strip() else url.split("?")[0].strip()
+    return hashlib.sha256(identifier.encode('utf-8')).hexdigest()
 
 def is_paywalled_content(title: str, url: str, body: str) -> bool:
     """
@@ -179,7 +184,7 @@ def scrape_full_article_body(url: str, source: str) -> str:
         logger.error(f"Error scraping article body from {url}: {e}")
         return ""
 
-def scrape_news_feeds(limit_per_feed: int = 5) -> List[Dict]:
+def scrape_news_feeds(limit_per_feed: int = 15, existing_ids: Optional[Set[str]] = None) -> List[Dict]:
     """
     Scrapes the RSS feeds and retrieves article details, fetching the full body
     for new/valid items.
@@ -195,7 +200,7 @@ def scrape_news_feeds(limit_per_feed: int = 5) -> List[Dict]:
                 feed = feedparser.parse(response.content)
             else:
                 logger.warning(f"Failed to fetch RSS feed for {source} (Status {response.status_code}). Falling back to direct parsing.")
-                feed = feedparser.parse(feed_url)
+                feed = feedparser.parse(feed_url, agent=HEADERS["User-Agent"])
                 
             entries = feed.entries[:limit_per_feed]
             logger.info(f"Found {len(feed.entries)} entries. Processing top {len(entries)}")
@@ -209,6 +214,12 @@ def scrape_news_feeds(limit_per_feed: int = 5) -> List[Dict]:
                     
                 # Normalize URL (remove query params)
                 url = url.split("?")[0]
+                guid = entry.get("id") or entry.get("guid") or ""
+                article_id = generate_article_id(url, guid)
+                
+                if existing_ids and article_id in existing_ids:
+                    logger.info(f"Skipping already processed article ({source}): {title}")
+                    continue
                 
                 # Parse date
                 pub_date_struct = entry.get("published_parsed") or entry.get("updated_parsed")
@@ -218,7 +229,6 @@ def scrape_news_feeds(limit_per_feed: int = 5) -> List[Dict]:
                     pub_date = datetime.utcnow()
                     
                 pub_date_str = pub_date.isoformat()
-                article_id = generate_article_id(url, pub_date_str)
                 
                 logger.info(f"Scraping full text for article: {title} ({url})")
                 body_de = scrape_full_article_body(url, source)

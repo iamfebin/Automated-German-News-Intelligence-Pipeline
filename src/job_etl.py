@@ -35,7 +35,7 @@ def main():
     hf_repo_id = os.environ.get("HF_REPO_ID")
     # Support both write token names
     hf_token = os.environ.get("HF_WRITE_TOKEN") or os.environ.get("HF_TOKEN")
-    limit_per_feed = int(os.environ.get("SCRAPER_LIMIT_PER_FEED", "10"))
+    limit_per_feed = int(os.environ.get("SCRAPER_LIMIT_PER_FEED", "15"))
     
     if hf_repo_id:
         logger.info(f"Target Hugging Face Dataset: {hf_repo_id}")
@@ -53,7 +53,7 @@ def main():
     
     # Step 2: Scrape news feeds
     logger.info(f"Step 2: Scraping latest German news articles (limit={limit_per_feed} per feed)...")
-    scraped_articles = scrape_news_feeds(limit_per_feed=limit_per_feed)
+    scraped_articles = scrape_news_feeds(limit_per_feed=limit_per_feed, existing_ids=existing_ids)
     logger.info(f"Scraped total of {len(scraped_articles)} articles.")
     
     # Step 3: Deduplicate articles
