@@ -1,5 +1,12 @@
 # Multilingual German News Intelligence Platform
 
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/iamfebin/Automated-German-News-Intelligence-Pipeline)
+[![GitHub Readme](https://img.shields.io/badge/GitHub-README-blue?style=for-the-badge&logo=markdown)](https://github.com/iamfebin/Automated-German-News-Intelligence-Pipeline#readme)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/iamfebin)
+[![Hugging Face Profile](https://img.shields.io/badge/Hugging%20Face-Profile-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/iamfebin)
+[![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-Live%20Demo-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/spaces/iamfebin/Automated-German-News-Intelligence-Pipeline)
+[![GitHub Profile](https://img.shields.io/badge/GitHub-iamfebin-181717?style=for-the-badge&logo=github)](https://github.com/iamfebin)
+
 A zero-operational-cost, production-grade NLP pipeline and search application designed to ingest, process, embed, index, and monitor German-language news media. It enables English-speaking users to query regional German media semantically in English, returning contextual multilingual summaries, localized Named Entity Recognition (NER), and an automated MLOps data drift dashboard.
 
 ## Primary Use Case
@@ -122,4 +129,17 @@ A Docker-based setup is available to run the services in isolated environments.
     ```bash
     docker compose down
     ```
+
+---
+
+## Author & Connect
+
+Developed by **Febin Babu**.
+
+* 🐙 **GitHub Repository**: [iamfebin/Automated-German-News-Intelligence-Pipeline](https://github.com/iamfebin/Automated-German-News-Intelligence-Pipeline)
+* 📖 **GitHub README**: [Project Documentation & Guides](https://github.com/iamfebin/Automated-German-News-Intelligence-Pipeline#readme)
+* 💼 **LinkedIn**: [linkedin.com/in/iamfebin](https://www.linkedin.com/in/iamfebin)
+* 🤗 **Hugging Face Profile**: [huggingface.co/iamfebin](https://huggingface.co/iamfebin)
+* 🚀 **Hugging Face Space Demo**: [Live Web Application](https://huggingface.co/spaces/iamfebin/Automated-German-News-Intelligence-Pipeline)
+
 
